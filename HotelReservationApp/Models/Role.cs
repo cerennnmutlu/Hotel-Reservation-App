@@ -1,7 +1,10 @@
-public class Role
+namespace HotelReservationApp.Models
 {
-    public int RoleID { get; set; }
-    public string RoleName { get; set; }
+    public class Role
+    {
+        public int RoleID { get; set; }
+        public string RoleName { get; set; }
 
-    public ICollection<User> Users { get; set; }
+        public ICollection<User> Users { get; set; }
+    }
 } 

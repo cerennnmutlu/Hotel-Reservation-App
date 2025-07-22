@@ -1,7 +1,10 @@
-public class City
+namespace HotelReservationApp.Models
 {
-    public int CityID { get; set; }
-    public string CityName { get; set; }
+    public class City
+    {
+        public int CityID { get; set; }
+        public string CityName { get; set; }
 
-    public ICollection<Hotel> Hotels { get; set; }
+        public ICollection<Hotel> Hotels { get; set; }
+    }
 } 

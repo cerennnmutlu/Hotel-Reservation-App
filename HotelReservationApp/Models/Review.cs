@@ -1,12 +1,15 @@
-public class Review
+namespace HotelReservationApp.Models
 {
-    public int ReviewID { get; set; }
-    public int UserID { get; set; }
-    public int HotelID { get; set; }
-    public int Rating { get; set; }
-    public string Comment { get; set; }
-    public DateTime? ReviewDate { get; set; }
+    public class Review
+    {
+        public int ReviewID { get; set; }
+        public int UserID { get; set; }
+        public int HotelID { get; set; }
+        public int Rating { get; set; }
+        public string Comment { get; set; }
+        public DateTime? ReviewDate { get; set; }
 
-    public User User { get; set; }
-    public Hotel Hotel { get; set; }
+        public User User { get; set; }
+        public Hotel Hotel { get; set; }
+    }
 } 
