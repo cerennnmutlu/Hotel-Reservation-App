@@ -7,6 +7,10 @@ namespace HotelReservationApp.Models
         public string Email { get; set; }
         public string PasswordHash { get; set; }
         public int RoleID { get; set; }
+        public string Phone { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string Gender { get; set; }
+        public DateTime CreatedDate { get; set; }
 
         public Role Role { get; set; }
         public ICollection<Hotel> Hotels { get; set; }

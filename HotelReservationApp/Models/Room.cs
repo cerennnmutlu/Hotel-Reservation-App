@@ -5,6 +5,7 @@ namespace HotelReservationApp.Models
         public int RoomID { get; set; }
         public int HotelID { get; set; }
         public int RoomTypeID { get; set; }
+        public string RoomNumber { get; set; }
         public decimal PricePerNight { get; set; }
         public int Capacity { get; set; }
 
