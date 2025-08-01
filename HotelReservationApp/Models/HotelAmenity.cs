@@ -1,4 +1,5 @@
 namespace HotelReservationApp.Models;
+
 public class HotelAmenity
 {
     public int AmenityID { get; set; }

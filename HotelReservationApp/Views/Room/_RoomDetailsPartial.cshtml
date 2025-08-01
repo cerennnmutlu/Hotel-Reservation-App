@@ -1,0 +1,65 @@
+@model HotelReservationApp.Models.Room
+
+<div class="modal-header">
+    <h5 class="modal-title">Room Details - @Model.RoomNumber</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body">
+    <div class="row">
+        <div class="col-md-6">
+            <img src="@(Model.RoomImages.FirstOrDefault()?.ImageUrl ?? "/images/default-room.jpg")" alt="Room Image"
+                class="img-fluid rounded mb-3" />
+        </div>
+        <div class="col-md-6">
+            <p><strong>Hotel:</strong> @Model.Hotel?.Name</p>
+            <p><strong>Room Type:</strong> @Model.RoomType?.TypeName</p>
+            <p><strong>Price Per Night:</strong> @Model.PricePerNight ₺</p>
+            <p><strong>Capacity:</strong> @Model.Capacity</p>
+            <p><strong>Room Number:</strong> @Model.RoomNumber</p>
+            <p><strong>Features:</strong></p>
+            @if (Model.Hotel?.HotelAmenityMappings != null && Model.Hotel.HotelAmenityMappings.Any())
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var m in Model.Hotel.HotelAmenityMappings)
+                    {
+                        <div class="d-flex align-items-center bg-light border rounded px-2 py-1">
+                            <i class="fa @m.Amenity?.Icon me-2 text-primary"></i>
+                            <span class="fw-semibold">@m.Amenity?.AmenityName</span>
+                        </div>
+                    }
+                </div>
+
+            }
+            else
+            {
+                <span>No amenities listed.</span>
+            }
+            <p class="mt-3"><strong>Check-in:</strong> 14:00</p>
+            <p><strong>Check-out:</strong> 12:00</p>
+        </div>
+    </div>
+
+    <hr />
+    <div class="row">
+        <div class="col-md-12">
+            <h6>Availability:</h6>
+            <ul>
+                @{
+                    var availabilityList = ViewBag.AvailabilityList as List<HotelReservationApp.Models.RoomAvailability>;
+                }
+                @foreach (var availability in availabilityList)
+                {
+                    <li>@availability.Date.ToShortDateString() - @(availability.IsAvailable ? "Available" : "Booked")</li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    {
+        <a href="/Room/Edit/@Model.RoomID" class="btn btn-outline-primary">Edit</a>
+        <a href="/Room/Delete/@Model.RoomID" class="btn btn-outline-danger">Delete</a>
+    }
+</div>

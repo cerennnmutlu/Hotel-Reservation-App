@@ -1,0 +1,33 @@
+@model IEnumerable<HotelReservationApp.Models.Hotel>
+@{
+    ViewBag.Title = "Otel Listesi";
+}
+
+<h2>Otel Listesi</h2>
+
+@if (Model != null && Model.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Otel Adı</th>
+                <th>Şehir</th>
+                <th>Adres</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var hotel in Model)
+        {
+            <tr>
+                <td>@hotel.Name</td>
+                <td>@hotel.CityID</td>
+                <td>@hotel.Address</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Hiç otel bulunamadı.</p>
+}

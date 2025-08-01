@@ -1,0 +1,66 @@
+@model IEnumerable<HotelReservationApp.Models.Room>
+
+@{
+    ViewData["Title"] = "Explore Rooms";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h6 class="text-primary text-uppercase" style="letter-spacing: 5px;">Our Rooms</h6>
+        <h1 class="mb-4">Explore Our <span class="text-warning">ROOMS</span></h1>
+    </div>
+    <div class="row g-4">
+        @foreach (var room in Model)
+        {
+           var image = room.RoomImages?.FirstOrDefault()?.ImageUrl ?? Url.Content("~/img/room-1.jpg");
+
+
+
+            <div class="col-lg-4 col-md-6">
+                <div class="room-item shadow rounded overflow-hidden">
+                    <div class="position-relative">
+                        <img class="img-fluid" src="@image" alt="Room Image">
+                        <small class="position-absolute start-0 top-100 translate-middle-y bg-warning text-white rounded py-1 px-3 ms-4">@room.PricePerNight.ToString("C") / Night</small>
+                    </div>
+                    <div class="p-4 mt-2">
+                        <h5 class="mb-2">@room.RoomType?.TypeName</h5>
+                        <p class="text-body mb-2"><strong>@room.Hotel?.Name</strong></p>
+                        <div class="d-flex mb-3">
+                            <small class="border-end me-3 pe-3"><i class="fa fa-bed text-warning me-2"></i>@room.Capacity Bed</small>
+                            <small class="border-end me-3 pe-3"><i class="fa fa-wifi text-warning me-2"></i>Wifi</small>
+                            <small><i class="fa fa-shower text-warning me-2"></i>Bath</small>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-sm btn-warning" onclick="showRoomDetails(@room.RoomID)">View Detail</button>
+                            <a class="btn btn-sm btn-dark" href="#">Book Now</a>
+                        </div>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                        {
+                            <div class="d-flex justify-content-between mt-2">
+                                <a class="btn btn-sm btn-secondary" href="/Room/Edit/@room.RoomID">Edit</a>
+                                <a class="btn btn-sm btn-danger" href="/Room/Delete/@room.RoomID">Delete</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="roomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modalContent">
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showRoomDetails(id) {
+            $('#modalContent').load('/Room/Details/' + id);
+            $('#roomModal').modal('show');
+        }
+    </script>
+}

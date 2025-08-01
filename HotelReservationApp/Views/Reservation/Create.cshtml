@@ -1,0 +1,138 @@
+@model HotelReservationApp.Models.Reservation
+@{
+    ViewData["Title"] = "Create Reservation";
+}
+
+<div class="container-xxl py-5">
+    <div class="container">
+        <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+            <h6 class="section-title text-center text-primary text-uppercase">Reservation</h6>
+            <h1 class="mb-5">Create <span class="text-primary text-uppercase">Reservation</span></h1>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Reservation Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="Create" method="post">
+                            <input type="hidden" asp-for="RoomID" />
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="CheckInDate" class="form-label">Check-in Date</label>
+                                    <input asp-for="CheckInDate" type="date" class="form-control" 
+                                           min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                                    <span asp-validation-for="CheckInDate" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="CheckOutDate" class="form-label">Check-out Date</label>
+                                    <input asp-for="CheckOutDate" type="date" class="form-control" 
+                                           min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" required />
+                                    <span asp-validation-for="CheckOutDate" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="GuestCount" class="form-label">Number of Guests</label>
+                                    <select asp-for="GuestCount" class="form-select" required>
+                                        <option value="1">1 Guest</option>
+                                        <option value="2">2 Guests</option>
+                                        <option value="3">3 Guests</option>
+                                        <option value="4">4 Guests</option>
+                                        <option value="5">5 Guests</option>
+                                        <option value="6">6 Guests</option>
+                                    </select>
+                                    <span asp-validation-for="GuestCount" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="SpecialRequests" class="form-label">Special Requests</label>
+                                    <textarea asp-for="SpecialRequests" class="form-control" rows="3" 
+                                              placeholder="Any special requests or notes..."></textarea>
+                                    <span asp-validation-for="SpecialRequests" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <div asp-validation-summary="ModelOnly" class="text-danger mt-3"></div>
+
+                            <div class="d-flex justify-content-between mt-4">
+                                <a asp-controller="Room" asp-action="Index" class="btn btn-secondary">
+                                    <i class="fa fa-arrow-left me-2"></i>Back to Rooms
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa fa-check me-2"></i>Create Reservation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Room Information</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (ViewBag.Room != null)
+                        {
+                            var room = ViewBag.Room as HotelReservationApp.Models.Room;
+                            <div class="text-center mb-3">
+                                <img src="img/room-1.jpg" class="img-fluid rounded" alt="@room.RoomType?.TypeName">
+                            </div>
+                            <h6 class="text-primary">@room.RoomType?.TypeName</h6>
+                            <p class="mb-2"><strong>Hotel:</strong> @room.Hotel?.Name</p>
+                            <p class="mb-2"><strong>Room Number:</strong> @room.RoomNumber</p>
+                            <p class="mb-2"><strong>Capacity:</strong> @room.Capacity Persons</p>
+                            <p class="mb-2"><strong>Price per Night:</strong> $@room.PricePerNight</p>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Total Nights:</strong></span>
+                                <span id="totalNights">1</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Total Amount:</strong></span>
+                                <span id="totalAmount" class="text-primary fw-bold">$@room.PricePerNight</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            const checkInInput = $('#CheckInDate');
+            const checkOutInput = $('#CheckOutDate');
+            const totalNightsSpan = $('#totalNights');
+            const totalAmountSpan = $('#totalAmount');
+            const pricePerNight = @(ViewBag.Room?.PricePerNight ?? 0);
+
+            function updateTotal() {
+                const checkIn = new Date(checkInInput.val());
+                const checkOut = new Date(checkOutInput.val());
+                
+                if (checkIn && checkOut && checkOut > checkIn) {
+                    const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+                    const total = nights * pricePerNight;
+                    
+                    totalNightsSpan.text(nights);
+                    totalAmountSpan.text('$' + total.toFixed(2));
+                }
+            }
+
+            checkInInput.on('change', function() {
+                const checkIn = new Date(this.value);
+                const minCheckOut = new Date(checkIn);
+                minCheckOut.setDate(minCheckOut.getDate() + 1);
+                checkOutInput.attr('min', minCheckOut.toISOString().split('T')[0]);
+                updateTotal();
+            });
+
+            checkOutInput.on('change', updateTotal);
+        });
+    </script>
+}

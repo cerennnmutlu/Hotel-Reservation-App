@@ -1,0 +1,129 @@
+@model HotelReservationApp.Models.BookingViewModel
+@{
+    ViewData["Title"] = "Oda Arama";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Oda Arama</h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Booking" method="post">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CheckInDate" class="form-label"></label>
+                                <input asp-for="CheckInDate" type="date" class="form-control" 
+                                       min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
+                                <span asp-validation-for="CheckInDate" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CheckOutDate" class="form-label"></label>
+                                <input asp-for="CheckOutDate" type="date" class="form-control" 
+                                       min="@DateTime.Today.AddDays(2).ToString("yyyy-MM-dd")" />
+                                <span asp-validation-for="CheckOutDate" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="AdultCount" class="form-label"></label>
+                                <select asp-for="AdultCount" class="form-select">
+                                    @for (int i = 1; i <= 10; i++)
+                                    {
+                                        <option value="@i">@i Yetişkin</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="AdultCount" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ChildCount" class="form-label"></label>
+                                <select asp-for="ChildCount" class="form-select">
+                                    @for (int i = 0; i <= 10; i++)
+                                    {
+                                        <option value="@i">@i Çocuk</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="ChildCount" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="CityID" class="form-label"></label>
+                                <select asp-for="CityID" class="form-select">
+                                    <option value="">Tüm Şehirler</option>
+                                    @if (ViewBag.Cities != null)
+                                    {
+                                        @foreach (var city in ViewBag.Cities)
+                                        {
+                                            <option value="@city.CityID">@city.CityName</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="HotelID" class="form-label"></label>
+                                <select asp-for="HotelID" class="form-select">
+                                    <option value="">Tüm Oteller</option>
+                                    @if (ViewBag.Hotels != null)
+                                    {
+                                        @foreach (var hotel in ViewBag.Hotels)
+                                        {
+                                            <option value="@hotel.HotelID">@hotel.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="RoomTypeID" class="form-label"></label>
+                                <select asp-for="RoomTypeID" class="form-select">
+                                    <option value="">Tüm Oda Tipleri</option>
+                                    @if (ViewBag.RoomTypes != null)
+                                    {
+                                        @foreach (var roomType in ViewBag.RoomTypes)
+                                        {
+                                            <option value="@roomType.RoomTypeID">@roomType.TypeName</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fa fa-search me-2"></i>Oda Ara
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tarih seçimi için JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkInInput = document.querySelector('input[name="CheckInDate"]');
+            const checkOutInput = document.querySelector('input[name="CheckOutDate"]');
+
+            // Giriş tarihi değiştiğinde çıkış tarihinin minimum değerini güncelle
+            checkInInput.addEventListener('change', function() {
+                const checkInDate = new Date(this.value);
+                const minCheckOutDate = new Date(checkInDate);
+                minCheckOutDate.setDate(minCheckOutDate.getDate() + 1);
+                
+                checkOutInput.min = minCheckOutDate.toISOString().split('T')[0];
+                
+                // Eğer çıkış tarihi giriş tarihinden önceyse, çıkış tarihini güncelle
+                if (checkOutInput.value && new Date(checkOutInput.value) <= checkInDate) {
+                    checkOutInput.value = minCheckOutDate.toISOString().split('T')[0];
+                }
+            });
+        });
+    </script>
+} 

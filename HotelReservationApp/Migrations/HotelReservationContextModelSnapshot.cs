@@ -297,6 +297,9 @@ namespace HotelReservationApp.Migrations
                     b.Property<int>("HotelID")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("PricePerNight")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");

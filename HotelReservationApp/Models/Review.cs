@@ -12,4 +12,4 @@ namespace HotelReservationApp.Models
         public User User { get; set; }
         public Hotel Hotel { get; set; }
     }
-} 
+}

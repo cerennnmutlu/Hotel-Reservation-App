@@ -8,4 +8,4 @@ namespace HotelReservationApp.Models
         public Hotel Hotel { get; set; }
         public HotelAmenity Amenity { get; set; }
     }
-} 
+}

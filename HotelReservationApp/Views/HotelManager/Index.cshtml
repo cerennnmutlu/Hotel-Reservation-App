@@ -1,0 +1,267 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Views/Shared/_HotelManagerLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Hotel Manager Dashboard</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary">Print</button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card navy shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            My Hotels
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalHotels</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-building stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card orange shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Total Rooms
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalRooms</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-bed stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card navy shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Total Reservations
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalReservations</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar-check stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card orange shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
+                            Total Reviews
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalReviews</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-star stat-icon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header card-header-navy py-3">
+                <h6 class="m-0 font-weight-bold text-white">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="HotelManager" asp-action="MyHotels" class="btn btn-orange btn-block w-100">
+                            <i class="fas fa-building me-2"></i>Manage Hotels
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="HotelManager" asp-action="MyRooms" class="btn btn-navy btn-block w-100">
+                            <i class="fas fa-bed me-2"></i>Manage Rooms
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="HotelManager" asp-action="MyReservations" class="btn btn-orange btn-block w-100">
+                            <i class="fas fa-calendar-check me-2"></i>View Reservations
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="HotelManager" asp-action="MyReviews" class="btn btn-navy btn-block w-100">
+                            <i class="fas fa-star me-2"></i>Manage Reviews
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Hotels -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">My Hotels</h6>
+                <a asp-controller="HotelManager" asp-action="MyHotels" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.UserHotels != null && ((List<Hotel>)ViewBag.UserHotels).Any())
+                {
+                    <div class="row">
+                        @foreach (var hotel in (List<Hotel>)ViewBag.UserHotels)
+                        {
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">@hotel.Name</h6>
+                                        <p class="card-text text-muted">@hotel.City?.CityName</p>
+                                        <p class="card-text small">@hotel.Address</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-success">Active</span>
+                                            <a asp-controller="HotelManager" asp-action="EditHotel" asp-route-id="@hotel.HotelID" 
+                                               class="btn btn-sm btn-outline-primary">Edit</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No Hotels Found</h5>
+                        <p class="text-muted">You haven't added any hotels yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Reservations</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>Guest</th>
+                                <th>Hotel</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>John Doe</td>
+                                <td>Grand Hotel</td>
+                                <td><span class="badge bg-success">Confirmed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Jane Smith</td>
+                                <td>Luxury Resort</td>
+                                <td><span class="badge bg-warning">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Reviews</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered" width="100%" cellspacing="0">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Hotel</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>John Doe</td>
+                                <td>Grand Hotel</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="far fa-star text-warning"></i>
+                                        <span class="ms-2">4/5</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Jane Smith</td>
+                                <td>Luxury Resort</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <i class="fas fa-star text-warning"></i>
+                                        <span class="ms-2">5/5</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-refresh dashboard stats every 30 seconds
+        setInterval(function() {
+            // You can add AJAX call here to refresh stats
+            console.log('Dashboard stats refreshed');
+        }, 30000);
+    </script>
+} 

@@ -7,4 +7,4 @@ namespace HotelReservationApp.Models
 
         public ICollection<User> Users { get; set; }
     }
-} 
+}

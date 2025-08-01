@@ -19,4 +19,4 @@ namespace HotelReservationApp.Models
         public Room Room { get; set; }
         public Payment Payment { get; set; }
     }
-} 
+}

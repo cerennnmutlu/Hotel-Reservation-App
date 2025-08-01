@@ -1,0 +1,24 @@
+@model List<HotelReservationApp.Models.Review>
+@{
+    ViewData["Title"] = "Hotel Reviews";
+}
+
+<h2>Reviews for @ViewBag.HotelName</h2>
+
+@if (!Model.Any())
+{
+    <p>No reviews yet. Be the first to write one!</p>
+}
+else
+{
+    foreach (var review in Model)
+    {
+        <div class="card my-3">
+            <div class="card-body">
+                <h5 class="card-title">Rating: @review.Rating/5</h5>
+                <p class="card-text">@review.Comment</p>
+                <small class="text-muted">by @review.User?.FullName on @review.ReviewDate?.ToString("yyyy-MM-dd")</small>
+            </div>
+        </div>
+    }
+}

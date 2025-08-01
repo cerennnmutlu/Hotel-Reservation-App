@@ -1,0 +1,116 @@
+@model HotelReservationApp.Models.Reservation
+@{
+    ViewData["Title"] = "Reservation Details";
+}
+
+<div class="container-xxl py-5">
+    <div class="container">
+        <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+            <h6 class="section-title text-center text-primary text-uppercase">Reservation Details</h6>
+            <h1 class="mb-5">Reservation <span class="text-primary text-uppercase">#@Model.ReservationID</span></h1>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Reservation Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Guest Information</h6>
+                                <p class="mb-1"><strong>Name:</strong> @Model.User?.FullName</p>
+                                <p class="mb-1"><strong>Email:</strong> @Model.User?.Email</p>
+                                <p class="mb-1"><strong>Phone:</strong> @Model.User?.Phone</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Reservation Details</h6>
+                                <p class="mb-1"><strong>Status:</strong> 
+                                    <span class="badge @(Model.Status == "Confirmed" ? "bg-success" : 
+                                                       Model.Status == "Cancelled" ? "bg-danger" : "bg-warning")">
+                                        @Model.Status
+                                    </span>
+                                </p>
+                                <p class="mb-1"><strong>Check-in:</strong> @Model.CheckInDate.ToString("MMMM dd, yyyy")</p>
+                                <p class="mb-1"><strong>Check-out:</strong> @Model.CheckOutDate.ToString("MMMM dd, yyyy")</p>
+                                <p class="mb-1"><strong>Guests:</strong> @Model.GuestCount</p>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.SpecialRequests))
+                        {
+                            <hr>
+                            <div>
+                                <h6 class="text-primary">Special Requests</h6>
+                                <p class="mb-0">@Model.SpecialRequests</p>
+                            </div>
+                        }
+
+                        <hr>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Timeline</h6>
+                                <p class="mb-1"><strong>Created:</strong> @Model.CreatedDate.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
+                                @if (Model.UpdatedDate.HasValue)
+                                {
+                                    <p class="mb-1"><strong>Last Updated:</strong> @Model.UpdatedDate.Value.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
+                                }
+                                @if (Model.CancellationDate.HasValue)
+                                {
+                                    <p class="mb-1"><strong>Cancelled:</strong> @Model.CancellationDate.Value.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
+                                }
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary">Financial Information</h6>
+                                <p class="mb-1"><strong>Total Amount:</strong> <span class="text-primary fw-bold">$@Model.TotalAmount?.ToString("F2")</span></p>
+                                <p class="mb-1"><strong>Nights:</strong> @((Model.CheckOutDate - Model.CheckInDate).Days)</p>
+                                <p class="mb-1"><strong>Price per Night:</strong> $@(Model.TotalAmount / (Model.CheckOutDate - Model.CheckInDate).Days)?.ToString("F2")</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Room Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <img src="img/room-1.jpg" class="img-fluid rounded" alt="@Model.Room?.RoomType?.TypeName">
+                        </div>
+                        <h6 class="text-primary">@Model.Room?.RoomType?.TypeName</h6>
+                        <p class="mb-2"><strong>Hotel:</strong> @Model.Room?.Hotel?.Name</p>
+                                                        <p class="mb-2"><strong>Location:</strong> @Model.Room?.Hotel?.City?.CityName</p>
+                        <p class="mb-2"><strong>Room Number:</strong> @Model.Room?.RoomNumber</p>
+                        <p class="mb-2"><strong>Capacity:</strong> @Model.Room?.Capacity Persons</p>
+                        <p class="mb-2"><strong>Price per Night:</strong> $@Model.Room?.PricePerNight</p>
+                    </div>
+                </div>
+
+                <div class="card shadow mt-3">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            @if (Model.Status == "Confirmed" && Model.CheckInDate > DateTime.Today)
+                            {
+                                <a asp-action="Cancel" asp-route-id="@Model.ReservationID" 
+                                   class="btn btn-outline-danger"
+                                   onclick="return confirm('Are you sure you want to cancel this reservation?')">
+                                    <i class="fa fa-times me-2"></i>Cancel Reservation
+                                </a>
+                            }
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fa fa-arrow-left me-2"></i>Back to List
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

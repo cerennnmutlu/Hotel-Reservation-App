@@ -1,0 +1,109 @@
+@model IEnumerable<HotelReservationApp.Models.Room>
+@{
+    ViewData["Title"] = "Search Results";
+}
+
+<div class="container-xxl py-5">
+    <div class="container">
+        <!-- Search Results Header -->
+        <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+            <h6 class="section-title text-center text-primary text-uppercase">Search Results</h6>
+            <h1 class="mb-5">Available <span class="text-primary text-uppercase">Rooms</span></h1>
+            
+            @if (ViewBag.SearchCriteria != null)
+            {
+                var criteria = ViewBag.SearchCriteria as HotelReservationApp.Models.BookingViewModel;
+                <div class="alert alert-info">
+                    <h6>Search Criteria:</h6>
+                    <p class="mb-1">
+                        @if (!string.IsNullOrEmpty(criteria.CheckInDate))
+                        {
+                            <span class="badge bg-primary me-2">Check-in: @criteria.CheckInDate</span>
+                        }
+                        @if (!string.IsNullOrEmpty(criteria.CheckOutDate))
+                        {
+                            <span class="badge bg-primary me-2">Check-out: @criteria.CheckOutDate</span>
+                        }
+                        <span class="badge bg-secondary me-2">Adults: @criteria.AdultCount</span>
+                        <span class="badge bg-secondary me-2">Children: @criteria.ChildCount</span>
+                    </p>
+                </div>
+            }
+            
+            <p class="text-muted">Found @ViewBag.TotalResults available rooms</p>
+        </div>
+
+        <!-- Search Results -->
+        <div class="row g-4">
+            @if (Model.Any())
+            {
+                @foreach (var room in Model)
+                {
+                    <div class="col-lg-4 col-md-6 wow fadeInUp" data-wow-delay="0.1s">
+                        <div class="room-item shadow rounded overflow-hidden">
+                            <div class="position-relative">
+                                @if (room.RoomImages != null && room.RoomImages.Any())
+                                {
+                                    <img class="img-fluid" src="@room.RoomImages.First().ImageUrl" alt="@room.RoomType?.TypeName">
+                                }
+                                else
+                                {
+                                    <img class="img-fluid" src="img/room-1.jpg" alt="@room.RoomType?.TypeName">
+                                }
+                                <small class="position-absolute start-0 top-100 translate-middle-y bg-primary text-white rounded py-1 px-3 ms-4">
+                                    $@room.PricePerNight/Night
+                                </small>
+                            </div>
+                            <div class="p-4 mt-2">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <h5 class="mb-0">@room.RoomType?.TypeName</h5>
+                                    <div class="ps-2">
+                                        <small class="fa fa-star text-primary"></small>
+                                        <small class="fa fa-star text-primary"></small>
+                                        <small class="fa fa-star text-primary"></small>
+                                        <small class="fa fa-star text-primary"></small>
+                                        <small class="fa fa-star text-primary"></small>
+                                    </div>
+                                </div>
+                                <div class="d-flex mb-3">
+                                    <small class="border-end me-3 pe-3">
+                                        <i class="fa fa-hotel text-primary me-2"></i>@room.Hotel?.Name
+                                    </small>
+                                    <small class="border-end me-3 pe-3">
+                                        <i class="fa fa-bed text-primary me-2"></i>@room.Capacity Persons
+                                    </small>
+                                    <small><i class="fa fa-wifi text-primary me-2"></i>WiFi</small>
+                                </div>
+                                <p class="text-body mb-3">@room.RoomType?.TypeName Room - Room No: @room.RoomNumber</p>
+                                <div class="d-flex justify-content-between">
+                                    <a class="btn btn-sm btn-primary rounded py-2 px-4" asp-controller="Room" asp-action="Details" asp-route-id="@room.RoomID">Details</a>
+                                    <a class="btn btn-sm btn-dark rounded py-2 px-4" asp-controller="Reservation" asp-action="Create" asp-route-roomId="@room.RoomID">Book Now</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center">
+                    <div class="alert alert-warning">
+                        <h5>No rooms found</h5>
+                        <p>Sorry, no rooms match your search criteria. Please try different dates or criteria.</p>
+                        <a asp-controller="Home" asp-action="Booking" class="btn btn-primary">Modify Search</a>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Back to Search -->
+        <div class="text-center mt-5">
+            <a asp-controller="Home" asp-action="Booking" class="btn btn-outline-primary">
+                <i class="fa fa-search me-2"></i>New Search
+            </a>
+            <a asp-controller="Room" asp-action="Index" class="btn btn-outline-secondary ms-2">
+                <i class="fa fa-list me-2"></i>View All Rooms
+            </a>
+        </div>
+    </div>
+</div> 

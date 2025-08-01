@@ -1,0 +1,126 @@
+@model IEnumerable<HotelReservationApp.Models.Reservation>
+@{
+    ViewData["Title"] = "All Reservations";
+}
+
+<div class="container-xxl py-5">
+    <div class="container">
+        <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
+            <h6 class="section-title text-center text-primary text-uppercase">Reservations</h6>
+            <h1 class="mb-5">All <span class="text-primary text-uppercase">Reservations</span></h1>
+        </div>
+
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fa fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Reservation Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Guest</th>
+                                <th>Hotel & Room</th>
+                                <th>Dates</th>
+                                <th>Guests</th>
+                                <th>Amount</th>
+            <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+                            @foreach (var reservation in Model)
+    {
+        <tr>
+                                    <td>
+                                        <strong>#@reservation.ReservationID</strong>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>@reservation.User?.FullName</strong><br>
+                                            <small class="text-muted">@reservation.User?.Email</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>@reservation.Room?.Hotel?.Name</strong><br>
+                                            <small class="text-muted">
+                                                @reservation.Room?.RoomType?.TypeName - Room @reservation.Room?.RoomNumber
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <strong>@reservation.CheckInDate.ToString("MMM dd")</strong> - 
+                                            <strong>@reservation.CheckOutDate.ToString("MMM dd, yyyy")</strong><br>
+                                            <small class="text-muted">
+                                                @((reservation.CheckOutDate - reservation.CheckInDate).Days) nights
+                                            </small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@reservation.GuestCount</span>
+                                    </td>
+                                    <td>
+                                        <strong>$@reservation.TotalAmount?.ToString("F2")</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge @(reservation.Status == "Confirmed" ? "bg-success" : 
+                                                           reservation.Status == "Cancelled" ? "bg-danger" : "bg-warning")">
+                                            @reservation.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>@reservation.CreatedDate.ToString("MMM dd, yyyy")</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@reservation.ReservationID" 
+                                               class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="fa fa-eye"></i>
+                                            </a>
+                                            @if (reservation.Status == "Confirmed" && reservation.CheckInDate > DateTime.Today)
+                                            {
+                                                <a asp-action="Cancel" asp-route-id="@reservation.ReservationID" 
+                                                   class="btn btn-sm btn-outline-danger" title="Cancel Reservation"
+                                                   onclick="return confirm('Are you sure you want to cancel this reservation?')">
+                                                    <i class="fa fa-times"></i>
+                                                </a>
+                                            }
+                                        </div>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+                </div>
+
+                @if (!Model.Any())
+                {
+                    <div class="text-center py-4">
+                        <div class="alert alert-info">
+                            <h5>No reservations found</h5>
+                            <p>There are no reservations in the system yet.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="fa fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>

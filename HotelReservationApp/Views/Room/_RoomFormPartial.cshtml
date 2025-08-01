@@ -1,0 +1,36 @@
+@model HotelReservationApp.Models.Room
+
+<form asp-action="@(Model.RoomID == 0 ? "Create" : "Edit")" method="post">
+    <div class="modal-header">
+        <h5 class="modal-title">@((Model.RoomID == 0) ? "Add Room" : "Edit Room")</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <input type="hidden" asp-for="RoomID" />
+
+        <div class="mb-3">
+            <label asp-for="RoomNumber" class="form-label"></label>
+            <input asp-for="RoomNumber" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label asp-for="HotelID" class="form-label"></label>
+            <select asp-for="HotelID" class="form-select" asp-items="@(new SelectList(ViewBag.Hotels, "HotelID", "Name"))"></select>
+        </div>
+        <div class="mb-3">
+            <label asp-for="RoomTypeID" class="form-label"></label>
+            <select asp-for="RoomTypeID" class="form-select" asp-items="@(new SelectList(ViewBag.RoomTypes, "RoomTypeID", "RoomTypeName"))"></select>
+        </div>
+        <div class="mb-3">
+            <label asp-for="PricePerNight" class="form-label"></label>
+            <input asp-for="PricePerNight" class="form-control" />
+        </div>
+        <div class="mb-3">
+            <label asp-for="Capacity" class="form-label"></label>
+            <input asp-for="Capacity" class="form-control" />
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    </div>
+</form>

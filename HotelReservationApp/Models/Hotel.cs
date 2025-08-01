@@ -20,6 +20,5 @@ namespace HotelReservationApp.Models
         public ICollection<Review> Reviews { get; set; }
         public ICollection<HotelImage> HotelImages { get; set; }
         public ICollection<HotelAmenityMapping> HotelAmenityMappings { get; set; }
-
     }
-} 
+}
