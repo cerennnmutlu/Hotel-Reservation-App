@@ -1,6 +1,6 @@
 @model HotelReservationApp.Models.BookingViewModel
 @{
-    ViewData["Title"] = "Oda Arama";
+    ViewData["Title"] = "Room Search";
 }
 
 <div class="container mt-5">
@@ -8,84 +8,119 @@
         <div class="col-md-8">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">Oda Arama</h3>
+                    <h3 class="mb-0">Room Search</h3>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Booking" method="post">
+                    <form action="/Home/Booking" method="post">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label asp-for="CheckInDate" class="form-label"></label>
-                                <input asp-for="CheckInDate" type="date" class="form-control" 
-                                       min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" />
-                                <span asp-validation-for="CheckInDate" class="text-danger"></span>
+                                <label for="CheckInDate" class="form-label">Check-in Date</label>
+                                <input name="CheckInDate" id="CheckInDate" type="date" class="form-control" 
+                                       min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" value="@(Model?.CheckInDate ?? DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"))" />
+                                <span class="text-danger"></span>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label asp-for="CheckOutDate" class="form-label"></label>
-                                <input asp-for="CheckOutDate" type="date" class="form-control" 
-                                       min="@DateTime.Today.AddDays(2).ToString("yyyy-MM-dd")" />
-                                <span asp-validation-for="CheckOutDate" class="text-danger"></span>
+                                <label for="CheckOutDate" class="form-label">Check-out Date</label>
+                                <input name="CheckOutDate" id="CheckOutDate" type="date" class="form-control" 
+                                       min="@DateTime.Today.AddDays(2).ToString("yyyy-MM-dd")" value="@(Model?.CheckOutDate ?? DateTime.Today.AddDays(2).ToString("yyyy-MM-dd"))" />
+                                <span class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label asp-for="AdultCount" class="form-label"></label>
-                                <select asp-for="AdultCount" class="form-select">
+                                <label for="AdultCount" class="form-label">Adult Count</label>
+                                <select name="AdultCount" id="AdultCount" class="form-select">
                                     @for (int i = 1; i <= 10; i++)
                                     {
-                                        <option value="@i">@i Yetişkin</option>
+                                        @if (Model?.AdultCount == i)
+                                        {
+                                            <option value="@i" selected>@i Adult</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@i">@i Adult</option>
+                                        }
                                     }
                                 </select>
-                                <span asp-validation-for="AdultCount" class="text-danger"></span>
+                                <span class="text-danger"></span>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label asp-for="ChildCount" class="form-label"></label>
-                                <select asp-for="ChildCount" class="form-select">
+                                <label for="ChildCount" class="form-label">Child Count</label>
+                                <select name="ChildCount" id="ChildCount" class="form-select">
                                     @for (int i = 0; i <= 10; i++)
                                     {
-                                        <option value="@i">@i Çocuk</option>
+                                        @if (Model?.ChildCount == i)
+                                        {
+                                            <option value="@i" selected>@i Child</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@i">@i Child</option>
+                                        }
                                     }
                                 </select>
-                                <span asp-validation-for="ChildCount" class="text-danger"></span>
+                                <span class="text-danger"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label asp-for="CityID" class="form-label"></label>
-                                <select asp-for="CityID" class="form-select">
-                                    <option value="">Tüm Şehirler</option>
+                                <label for="CityID" class="form-label">City</label>
+                                <select name="CityID" id="CityID" class="form-select">
+                                    <option value="">All Cities</option>
                                     @if (ViewBag.Cities != null)
                                     {
                                         @foreach (var city in ViewBag.Cities)
                                         {
-                                            <option value="@city.CityID">@city.CityName</option>
+                                            @if (Model?.CityID == city.CityID)
+                                            {
+                                                <option value="@city.CityID" selected>@city.CityName</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@city.CityID">@city.CityName</option>
+                                            }
                                         }
                                     }
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label asp-for="HotelID" class="form-label"></label>
-                                <select asp-for="HotelID" class="form-select">
-                                    <option value="">Tüm Oteller</option>
+                                <label for="HotelID" class="form-label">Hotel</label>
+                                <select name="HotelID" id="HotelID" class="form-select">
+                                    <option value="">All Hotels</option>
                                     @if (ViewBag.Hotels != null)
                                     {
                                         @foreach (var hotel in ViewBag.Hotels)
                                         {
-                                            <option value="@hotel.HotelID">@hotel.Name</option>
+                                            @if (Model?.HotelID == hotel.HotelID)
+                                            {
+                                                <option value="@hotel.HotelID" selected>@hotel.Name</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@hotel.HotelID">@hotel.Name</option>
+                                            }
                                         }
                                     }
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label asp-for="RoomTypeID" class="form-label"></label>
-                                <select asp-for="RoomTypeID" class="form-select">
-                                    <option value="">Tüm Oda Tipleri</option>
+                                <label for="RoomTypeID" class="form-label">Room Type</label>
+                                <select name="RoomTypeID" id="RoomTypeID" class="form-select">
+                                    <option value="">All Room Types</option>
                                     @if (ViewBag.RoomTypes != null)
                                     {
                                         @foreach (var roomType in ViewBag.RoomTypes)
                                         {
-                                            <option value="@roomType.RoomTypeID">@roomType.TypeName</option>
+                                            @if (Model?.RoomTypeID == roomType.RoomTypeID)
+                                            {
+                                                <option value="@roomType.RoomTypeID" selected>@roomType.TypeName</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@roomType.RoomTypeID">@roomType.TypeName</option>
+                                            }
                                         }
                                     }
                                 </select>
@@ -94,7 +129,7 @@
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fa fa-search me-2"></i>Oda Ara
+                                <i class="fa fa-search me-2"></i>Search Rooms
                             </button>
                         </div>
                     </form>
@@ -106,12 +141,12 @@
 
 @section Scripts {
     <script>
-        // Tarih seçimi için JavaScript
+        // JavaScript for date selection
         document.addEventListener('DOMContentLoaded', function() {
             const checkInInput = document.querySelector('input[name="CheckInDate"]');
             const checkOutInput = document.querySelector('input[name="CheckOutDate"]');
 
-            // Giriş tarihi değiştiğinde çıkış tarihinin minimum değerini güncelle
+            // Update minimum check-out date when check-in date changes
             checkInInput.addEventListener('change', function() {
                 const checkInDate = new Date(this.value);
                 const minCheckOutDate = new Date(checkInDate);
@@ -119,11 +154,11 @@
                 
                 checkOutInput.min = minCheckOutDate.toISOString().split('T')[0];
                 
-                // Eğer çıkış tarihi giriş tarihinden önceyse, çıkış tarihini güncelle
+                // If check-out date is before check-in date, update check-out date
                 if (checkOutInput.value && new Date(checkOutInput.value) <= checkInDate) {
                     checkOutInput.value = minCheckOutDate.toISOString().split('T')[0];
                 }
             });
         });
     </script>
-} 
+}

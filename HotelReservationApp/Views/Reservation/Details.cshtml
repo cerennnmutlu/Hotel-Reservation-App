@@ -79,7 +79,14 @@
                     </div>
                     <div class="card-body">
                         <div class="text-center mb-3">
-                            <img src="img/room-1.jpg" class="img-fluid rounded" alt="@Model.Room?.RoomType?.TypeName">
+                            @if (Model.Room?.RoomImages != null && Model.Room.RoomImages.Any())
+                            {
+                                <img src="@Model.Room.RoomImages.First().ImageUrl" class="img-fluid rounded" alt="@Model.Room?.RoomType?.TypeName">
+                            }
+                            else
+                            {
+                                <img src="~/img/room-1.jpg" class="img-fluid rounded" alt="@Model.Room?.RoomType?.TypeName">
+                            }
                         </div>
                         <h6 class="text-primary">@Model.Room?.RoomType?.TypeName</h6>
                         <p class="mb-2"><strong>Hotel:</strong> @Model.Room?.Hotel?.Name</p>

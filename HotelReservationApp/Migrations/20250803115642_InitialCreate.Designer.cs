@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelReservationApp.Migrations
 {
     [DbContext(typeof(HotelReservationContext))]
-    [Migration("20250728192156_SeedSampleDataComplete")]
-    partial class SeedSampleDataComplete
+    [Migration("20250803115642_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -300,6 +300,9 @@ namespace HotelReservationApp.Migrations
                     b.Property<int>("HotelID")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("PricePerNight")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
@@ -413,6 +416,9 @@ namespace HotelReservationApp.Migrations
                     b.Property<string>("Gender")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

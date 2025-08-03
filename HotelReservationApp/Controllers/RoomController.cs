@@ -105,6 +105,8 @@ namespace HotelReservationApp.Controllers
             var query = _context.Rooms
                 .Include(r => r.Hotel)
                 .ThenInclude(h => h.City)
+                .Include(r => r.Hotel)
+                .ThenInclude(h => h.Reviews)
                 .Include(r => r.RoomType)
                 .Include(r => r.RoomImages)
                 .AsQueryable();
@@ -127,7 +129,7 @@ namespace HotelReservationApp.Controllers
 
             // Filter by capacity (adults + children)
             var totalGuests = searchModel.AdultCount + searchModel.ChildCount;
-            query = query.Where(r => r.Capacity >= totalGuests);
+            query = query.Where(r => r.Capacity >= totalGuests && r.Capacity <= totalGuests + 1);
 
             // Date availability check (if dates are provided)
             if (!string.IsNullOrEmpty(searchModel.CheckInDate) && !string.IsNullOrEmpty(searchModel.CheckOutDate))

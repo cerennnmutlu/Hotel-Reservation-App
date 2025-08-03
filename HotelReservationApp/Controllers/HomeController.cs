@@ -17,27 +17,33 @@ namespace HotelReservationApp.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var viewModel = new HomeViewModel
+            var homeViewModel = new HomeViewModel
             {
                 TotalRooms = await _context.Rooms.CountAsync(),
                 TotalHotels = await _context.Hotels.CountAsync(),
                 TotalCustomers = await _context.Users.CountAsync(u => u.Role.RoleName == "Customer"),
                 FeaturedRooms = await _context.Rooms
+                    .Include(r => r.RoomType)
                     .Include(r => r.Hotel)
-                    .Take(3)
-                    .ToListAsync(),
-                FeaturedHotels = await _context.Hotels
-                    .Include(h => h.City)
-                    .Take(3)
+                        .ThenInclude(h => h.Reviews)
+                    .Include(r => r.RoomImages)
+                    .Take(6)
                     .ToListAsync()
             };
 
-            return View(viewModel);
+            return View(homeViewModel);
         }
 
-        public IActionResult About()
+        public async Task<IActionResult> About()
         {
-            return View();
+            var homeViewModel = new HomeViewModel
+            {
+                TotalRooms = await _context.Rooms.CountAsync(),
+                TotalHotels = await _context.Hotels.CountAsync(),
+                TotalCustomers = await _context.Users.CountAsync(u => u.Role.RoleName == "Customer")
+            };
+
+            return View(homeViewModel);
         }
 
         public IActionResult Services()
@@ -56,8 +62,8 @@ namespace HotelReservationApp.Controllers
         {
             var bookingViewModel = new BookingViewModel
             {
-                CheckInDate = DateTime.Now.Date.AddDays(1).ToString("yyyy-MM-dd"),
-                CheckOutDate = DateTime.Now.Date.AddDays(2).ToString("yyyy-MM-dd")
+                CheckInDate = DateTime.Today.AddDays(1).ToString("yyyy-MM-dd"),
+                CheckOutDate = DateTime.Today.AddDays(2).ToString("yyyy-MM-dd")
             };
 
             ViewBag.Cities = await _context.Cities.ToListAsync();

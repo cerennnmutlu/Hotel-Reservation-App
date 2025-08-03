@@ -4,6 +4,41 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
+@section Styles {
+    <style>
+        .filter-btn {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .filter-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-color: #fff;
+        }
+        
+        .filter-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .badge-navy {
+            background-color: #1e3a8a;
+            color: white;
+        }
+        
+        .badge-orange {
+            background-color: #ea580c;
+            color: white;
+        }
+    </style>
+}
+
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Users Management</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
@@ -18,16 +53,51 @@
     </div>
 </div>
 
+<!-- User Type Navigation -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header card-header-navy py-3">
+                <h6 class="m-0 font-weight-bold text-white">User Categories</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <button type="button" class="btn btn-navy btn-block w-100 filter-btn" data-role="Customer">
+                            <i class="fas fa-users me-2"></i>Customers
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button type="button" class="btn btn-orange btn-block w-100 filter-btn" data-role="Hotel Manager">
+                            <i class="fas fa-building me-2"></i>Hotel Managers
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button type="button" class="btn btn-navy btn-block w-100 filter-btn" data-role="Admin">
+                            <i class="fas fa-user-shield me-2"></i>Admins
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button type="button" class="btn btn-orange btn-block w-100 filter-btn active" data-role="All">
+                            <i class="fas fa-list me-2"></i>All Users
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="card shadow mb-4">
-    <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary">All Users</h6>
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+    <div class="card-header card-header-navy py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-white">All Users</h6>
+        <button type="button" class="btn btn-orange btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
             <i class="fas fa-plus me-1"></i>Add New User
         </button>
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered" id="usersTable" width="100%" cellspacing="0">
+            <table class="table table-bordered table-custom" id="usersTable" width="100%" cellspacing="0">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -35,6 +105,7 @@
                         <th>Email</th>
                         <th>Phone</th>
                         <th>Role</th>
+                        <th>Status</th>
                         <th>Created Date</th>
                         <th>Actions</th>
                     </tr>
@@ -48,18 +119,33 @@
                             <td>@user.Email</td>
                             <td>@user.Phone</td>
                             <td>
-                                <span class="badge @(user.Role?.RoleName == "Admin" ? "bg-danger" : 
-                                                   user.Role?.RoleName == "Hotel Manager" ? "bg-success" : "bg-primary")">
+                                <span class="badge @(user.Role?.RoleName == "Admin" ? "badge-navy" : 
+                                                   user.Role?.RoleName == "Hotel Manager" ? "badge-orange" : "badge-navy")">
                                     @user.Role?.RoleName
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge @(user.IsActive ? "bg-success" : "bg-danger")">
+                                    @(user.IsActive ? "Active" : "Inactive")
                                 </span>
                             </td>
                             <td>@user.CreatedDate.ToString("MMM dd, yyyy")</td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <a asp-action="EditUser" asp-route-id="@user.UserID" 
-                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <button type="button" class="btn btn-sm btn-outline-info" 
+                                            onclick="viewUserDetails(@user.UserID)" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                            onclick="editUser(@user.UserID, '@user.FullName', '@user.Email', '@user.Phone', @user.RoleID, @user.IsActive.ToString().ToLower())" 
+                                            title="Edit">
                                         <i class="fas fa-edit"></i>
-                                    </a>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            onclick="toggleUserStatus(@user.UserID, '@user.FullName', @user.IsActive.ToString().ToLower())" 
+                                            title="@(user.IsActive ? "Deactivate" : "Activate")">
+                                        <i class="fas @(user.IsActive ? "fa-user-slash" : "fa-user-check")"></i>
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-danger" 
                                             onclick="deleteUser(@user.UserID, '@user.FullName')" title="Delete">
                                         <i class="fas fa-trash"></i>
@@ -78,11 +164,11 @@
 <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addUserModalLabel">Add New User</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header modal-header-navy">
+                <h5 class="modal-title text-white" id="addUserModalLabel">Add New User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form asp-action="CreateUser" method="post">
+            <form id="addUserForm">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="fullName" class="form-label">Full Name</label>
@@ -107,34 +193,242 @@
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="PasswordHash" required>
+                        <input type="password" class="form-control" id="password" name="Password" required>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add User</button>
+                    <button type="submit" class="btn btn-orange">Add User</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Delete User Form -->
-<form id="deleteUserForm" asp-action="DeleteUser" method="post" style="display: none;">
-    <input type="hidden" id="deleteUserId" name="id" />
-</form>
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header modal-header-navy">
+                <h5 class="modal-title text-white" id="editUserModalLabel">Edit User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId" name="UserID">
+                    <div class="mb-3">
+                        <label for="editFullName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="editFullName" name="FullName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="Email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPhone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="editPhone" name="Phone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRoleId" class="form-label">Role</label>
+                        <select class="form-select" id="editRoleId" name="RoleID" required>
+                            <option value="">Select Role</option>
+                            <option value="1">Admin</option>
+                            <option value="2">Hotel Manager</option>
+                            <option value="3">Customer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPassword" class="form-label">Password (leave blank to keep current)</label>
+                        <input type="password" class="form-control" id="editPassword" name="Password">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editIsActive" name="IsActive">
+                            <label class="form-check-label" for="editIsActive">
+                                Active
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-navy">Update User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- User Details Modal -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1" aria-labelledby="userDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header modal-header-orange">
+                <h5 class="modal-title text-white" id="userDetailsModalLabel">User Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="userDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>
-        function deleteUser(userId, userName) {
-            if (confirm(`Are you sure you want to delete user "${userName}"?`)) {
-                document.getElementById('deleteUserId').value = userId;
-                document.getElementById('deleteUserForm').submit();
+        // Filter functionality
+        $('.filter-btn').on('click', function() {
+            $('.filter-btn').removeClass('active');
+            $(this).addClass('active');
+            
+            const role = $(this).data('role');
+            filterTable(role);
+        });
+
+        function filterTable(role) {
+            const table = $('#usersTable').DataTable();
+            
+            if (role === 'All') {
+                table.column(4).search('').draw();
+            } else {
+                table.column(4).search(role).draw();
             }
         }
 
+        // Add User
+        $('#addUserForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '@Url.Action("CreateUser", "Admin")',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        $('#addUserModal').modal('hide');
+                        showAlert('User created successfully!', 'success');
+                        $('#addUserForm')[0].reset();
+                        refreshTable();
+                    } else {
+                        showAlert(response.message || 'Failed to create user.', 'danger');
+                    }
+                },
+                error: function() {
+                    showAlert('An error occurred while creating the user.', 'danger');
+                }
+            });
+        });
+
+        // Edit User
+        $('#editUserForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            $.ajax({
+                url: '@Url.Action("EditUser", "Admin")',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        $('#editUserModal').modal('hide');
+                        showAlert('User updated successfully!', 'success');
+                        refreshTable();
+                    } else {
+                        showAlert(response.message || 'Failed to update user.', 'danger');
+                    }
+                },
+                error: function() {
+                    showAlert('An error occurred while updating the user.', 'danger');
+                }
+            });
+        });
+
+        // View User Details
+        function viewUserDetails(userId) {
+            $.ajax({
+                url: '@Url.Action("UserDetails", "Admin")',
+                type: 'GET',
+                data: { id: userId },
+                success: function(response) {
+                    $('#userDetailsContent').html(response);
+                    $('#userDetailsModal').modal('show');
+                },
+                error: function() {
+                    showAlert('Failed to load user details.', 'danger');
+                }
+            });
+        }
+
+        // Edit User Modal
+        function editUser(userId, fullName, email, phone, roleId, isActive) {
+            $('#editUserId').val(userId);
+            $('#editFullName').val(fullName);
+            $('#editEmail').val(email);
+            $('#editPhone').val(phone);
+            $('#editRoleId').val(roleId);
+            $('#editIsActive').prop('checked', isActive === 'true');
+            $('#editUserModal').modal('show');
+        }
+
+        // Delete User
+        function deleteUser(userId, userName) {
+            if (confirm(`Are you sure you want to delete user "${userName}"?`)) {
+                $.ajax({
+                    url: '@Url.Action("DeleteUser", "Admin")',
+                    type: 'POST',
+                    data: { id: userId },
+                    success: function(response) {
+                        if (response.success) {
+                            showAlert('User deleted successfully!', 'success');
+                            refreshTable();
+                        } else {
+                            showAlert(response.message || 'Failed to delete user.', 'danger');
+                        }
+                    },
+                    error: function() {
+                        showAlert('An error occurred while deleting the user.', 'danger');
+                    }
+                });
+            }
+        }
+
+        // Toggle User Status
+        function toggleUserStatus(userId, userName, isActive) {
+            const action = isActive === 'true' ? 'deactivate' : 'activate';
+            if (confirm(`Are you sure you want to ${action} user "${userName}"?`)) {
+                $.ajax({
+                    url: '@Url.Action("ToggleUserStatus", "Admin")',
+                    type: 'POST',
+                    data: { id: userId },
+                    success: function(response) {
+                        if (response.success) {
+                            showAlert(`User ${action}d successfully!`, 'success');
+                            refreshTable();
+                        } else {
+                            showAlert(response.message || `Failed to ${action} user.`, 'danger');
+                        }
+                    },
+                    error: function() {
+                        showAlert(`An error occurred while ${action}ing the user.`, 'danger');
+                    }
+                });
+            }
+        }
+
+        // Show Alert
+        function showAlert(message, type) {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            $('.container-fluid').prepend(alertHtml);
+        }
+
         function exportTable() {
-            // Simple table export functionality
             const table = document.getElementById('usersTable');
             const html = table.outerHTML;
             const url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
@@ -146,7 +440,71 @@
             document.body.removeChild(downloadLink);
         }
 
-        // Initialize DataTable if available
+        // Refresh table function
+        function refreshTable() {
+            $.ajax({
+                url: '@Url.Action("GetUsersData", "Admin")',
+                type: 'GET',
+                success: function(data) {
+                    const table = $('#usersTable').DataTable();
+                    table.clear();
+                    
+                    data.forEach(function(user) {
+                        const roleClass = user.roleName === 'Admin' ? 'badge-navy' : 
+                                        user.roleName === 'Hotel Manager' ? 'badge-orange' : 'badge-navy';
+                        const statusClass = user.isActive ? 'bg-success' : 'bg-danger';
+                        const statusText = user.isActive ? 'Active' : 'Inactive';
+                        const toggleIcon = user.isActive ? 'fa-user-slash' : 'fa-user-check';
+                        const toggleTitle = user.isActive ? 'Deactivate' : 'Activate';
+                        
+                        table.row.add([
+                            user.userID,
+                            user.fullName,
+                            user.email,
+                            user.phone || '',
+                            `<span class="badge ${roleClass}">${user.roleName}</span>`,
+                            `<span class="badge ${statusClass}">${statusText}</span>`,
+                            new Date(user.createdDate).toLocaleDateString('en-US', { 
+                                year: 'numeric', month: 'short', day: '2-digit' 
+                            }),
+                            `<div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-info" 
+                                        onclick="viewUserDetails(${user.userID})" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        onclick="editUser(${user.userID}, '${user.fullName}', '${user.email}', '${user.phone || ''}', ${user.roleID}, ${user.isActive.toString().toLowerCase()})" 
+                                        title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning" 
+                                        onclick="toggleUserStatus(${user.userID}, '${user.fullName}', ${user.isActive.toString().toLowerCase()})" 
+                                        title="${toggleTitle}">
+                                    <i class="fas ${toggleIcon}"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteUser(${user.userID}, '${user.fullName}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>`
+                        ]);
+                    });
+                    
+                    table.draw();
+                    
+                    // Reapply current filter
+                    const activeFilter = $('.filter-btn.active').data('role');
+                    if (activeFilter && activeFilter !== 'All') {
+                        filterTable(activeFilter);
+                    }
+                },
+                error: function() {
+                    showAlert('Failed to refresh table data.', 'danger');
+                }
+            });
+        }
+
+        // Initialize DataTable
         $(document).ready(function() {
             if ($.fn.DataTable) {
                 $('#usersTable').DataTable({

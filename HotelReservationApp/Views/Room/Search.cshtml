@@ -18,14 +18,13 @@
                     <p class="mb-1">
                         @if (!string.IsNullOrEmpty(criteria.CheckInDate))
                         {
-                            <span class="badge bg-primary me-2">Check-in: @criteria.CheckInDate</span>
+                            <span class="badge bg-primary me-2">Check-in: <input type="date" value="@criteria.CheckInDate" class="form-control-sm border-0 bg-transparent text-white" /></span>
                         }
                         @if (!string.IsNullOrEmpty(criteria.CheckOutDate))
                         {
-                            <span class="badge bg-primary me-2">Check-out: @criteria.CheckOutDate</span>
+                            <span class="badge bg-primary me-2">Check-out: <input type="date" value="@criteria.CheckOutDate" class="form-control-sm border-0 bg-transparent text-white" /></span>
                         }
-                        <span class="badge bg-secondary me-2">Adults: @criteria.AdultCount</span>
-                        <span class="badge bg-secondary me-2">Children: @criteria.ChildCount</span>
+                        <span class="badge bg-secondary me-2">Total Guests: @(criteria.AdultCount + criteria.ChildCount) (@criteria.AdultCount Adults, @criteria.ChildCount Children)</span>
                     </p>
                 </div>
             }
@@ -44,11 +43,11 @@
                             <div class="position-relative">
                                 @if (room.RoomImages != null && room.RoomImages.Any())
                                 {
-                                    <img class="img-fluid" src="@room.RoomImages.First().ImageUrl" alt="@room.RoomType?.TypeName">
+                                    <img class="img-fluid" src="@room.RoomImages.First().ImageUrl" alt="@room.RoomType?.TypeName" style="height: 250px; width: 100%; object-fit: cover;" onerror="this.src='~/img/room-1.jpg'">
                                 }
                                 else
                                 {
-                                    <img class="img-fluid" src="img/room-1.jpg" alt="@room.RoomType?.TypeName">
+                                    <img class="img-fluid" src="~/img/room-1.jpg" alt="@room.RoomType?.TypeName" style="height: 250px; width: 100%; object-fit: cover;">
                                 }
                                 <small class="position-absolute start-0 top-100 translate-middle-y bg-primary text-white rounded py-1 px-3 ms-4">
                                     $@room.PricePerNight/Night
@@ -58,11 +57,21 @@
                                 <div class="d-flex justify-content-between mb-3">
                                     <h5 class="mb-0">@room.RoomType?.TypeName</h5>
                                     <div class="ps-2">
-                                        <small class="fa fa-star text-primary"></small>
-                                        <small class="fa fa-star text-primary"></small>
-                                        <small class="fa fa-star text-primary"></small>
-                                        <small class="fa fa-star text-primary"></small>
-                                        <small class="fa fa-star text-primary"></small>
+                                        @{
+                                            var avgRating = room.Hotel?.Reviews?.Any() == true ? 
+                                                Math.Round(room.Hotel.Reviews.Average(r => r.Rating)) : 0;
+                                            for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= avgRating)
+                                                {
+                                                    <small class="fa fa-star text-primary"></small>
+                                                }
+                                                else
+                                                {
+                                                    <small class="fa fa-star text-secondary"></small>
+                                                }
+                                            }
+                                        }
                                     </div>
                                 </div>
                                 <div class="d-flex mb-3">
@@ -72,12 +81,11 @@
                                     <small class="border-end me-3 pe-3">
                                         <i class="fa fa-bed text-primary me-2"></i>@room.Capacity Persons
                                     </small>
-                                    <small><i class="fa fa-wifi text-primary me-2"></i>WiFi</small>
                                 </div>
-                                <p class="text-body mb-3">@room.RoomType?.TypeName Room - Room No: @room.RoomNumber</p>
+                                
                                 <div class="d-flex justify-content-between">
-                                    <a class="btn btn-sm btn-primary rounded py-2 px-4" asp-controller="Room" asp-action="Details" asp-route-id="@room.RoomID">Details</a>
-                                    <a class="btn btn-sm btn-dark rounded py-2 px-4" asp-controller="Reservation" asp-action="Create" asp-route-roomId="@room.RoomID">Book Now</a>
+                                    <button class="btn btn-sm btn-primary rounded py-2 px-4" onclick="showRoomDetails(@room.RoomID)">Details</button>
+                                    <button class="btn btn-sm btn-dark rounded py-2 px-4" onclick="bookRoom(@room.RoomID)">Book Now</button>
                                 </div>
                             </div>
                         </div>
@@ -106,4 +114,69 @@
             </a>
         </div>
     </div>
-</div> 
+</div>
+
+<!-- Room Details Modal -->
+<div class="modal fade" id="roomDetailsModal" tabindex="-1" aria-labelledby="roomDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="roomDetailsContent">
+            <!-- Content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showRoomDetails(roomId) {
+            $.get('/Room/Details/' + roomId, function(data) {
+                $('#roomDetailsContent').html(data);
+                $('#roomDetailsModal').modal('show');
+            });
+        }
+
+        function bookRoom(roomId) {
+            // Get search criteria from ViewBag
+            @if (ViewBag.SearchCriteria != null)
+            {
+                var criteria = ViewBag.SearchCriteria as HotelReservationApp.Models.BookingViewModel;
+                <text>
+                const checkIn = '@criteria.CheckInDate';
+                const checkOut = '@criteria.CheckOutDate';
+                const guestCount = @(criteria.AdultCount + criteria.ChildCount);
+                
+                // Build reservation URL with search criteria
+                let reservationUrl = '/Reservation/Create?roomId=' + roomId;
+                if (checkIn) reservationUrl += '&checkIn=' + checkIn;
+                if (checkOut) reservationUrl += '&checkOut=' + checkOut;
+                if (guestCount) reservationUrl += '&guestCount=' + guestCount;
+                </text>
+            }
+            else
+            {
+                <text>
+                let reservationUrl = '/Reservation/Create?roomId=' + roomId;
+                </text>
+            }
+
+            // Check if user is logged in
+            @if (User.Identity.IsAuthenticated)
+            {
+                <text>
+                window.location.href = reservationUrl;
+                </text>
+            }
+            else
+            {
+                <text>
+                // Redirect to login with return URL
+                window.location.href = '/Account/Login?returnUrl=' + encodeURIComponent(reservationUrl);
+                </text>
+            }
+        }
+
+        function bookRoomFromModal(roomId) {
+            $('#roomDetailsModal').modal('hide');
+            bookRoom(roomId);
+        }
+    </script>
+}

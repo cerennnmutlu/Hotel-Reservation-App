@@ -1,0 +1,176 @@
+@model IEnumerable<HotelReservationApp.Models.User>
+@{
+    ViewData["Title"] = "Customers Management";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Customers Management</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportTable()">
+                <i class="fas fa-download me-1"></i>Export
+            </button>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
+            <i class="fas fa-filter me-1"></i>Filter
+        </button>
+    </div>
+</div>
+
+<!-- User Type Navigation -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header card-header-navy py-3">
+                <h6 class="m-0 font-weight-bold text-white">User Categories</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Admin" asp-action="Customers" class="btn btn-navy btn-block w-100 active">
+                            <i class="fas fa-users me-2"></i>Customers
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Admin" asp-action="HotelManagers" class="btn btn-orange btn-block w-100">
+                            <i class="fas fa-building me-2"></i>Hotel Managers
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Admin" asp-action="Admins" class="btn btn-navy btn-block w-100">
+                            <i class="fas fa-user-shield me-2"></i>Admins
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a asp-controller="Admin" asp-action="Users" class="btn btn-orange btn-block w-100">
+                            <i class="fas fa-list me-2"></i>All Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header card-header-orange py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-white">Customer Users</h6>
+        <a asp-controller="Admin" asp-action="CreateUser" class="btn btn-navy btn-sm">
+            <i class="fas fa-plus me-1"></i>Add New Customer
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-custom" id="customersTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Reservations</th>
+                        <th>Reviews</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.UserID</td>
+                            <td>@user.FullName</td>
+                            <td>@user.Email</td>
+                            <td>@user.Phone</td>
+                            <td>
+                                <span class="badge @(user.IsActive ? "bg-success" : "bg-danger")">
+                                    @(user.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">@(user.Reservations?.Count ?? 0)</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">@(user.Reviews?.Count ?? 0)</span>
+                            </td>
+                            <td>@user.CreatedDate.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a asp-action="UserDetails" asp-route-id="@user.UserID" 
+                                       class="btn btn-sm btn-outline-info" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a asp-action="EditUser" asp-route-id="@user.UserID" 
+                                       class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            onclick="toggleUserStatus(@user.UserID, '@user.FullName', @user.IsActive.ToString().ToLower())" 
+                                            title="@(user.IsActive ? "Deactivate" : "Activate")">
+                                        <i class="fas @(user.IsActive ? "fa-user-slash" : "fa-user-check")"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="deleteUser(@user.UserID, '@user.FullName')" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Form -->
+<form id="deleteUserForm" asp-action="DeleteUser" method="post" style="display: none;">
+    <input type="hidden" id="deleteUserId" name="id" />
+</form>
+
+<!-- Toggle User Status Form -->
+<form id="toggleUserStatusForm" asp-action="ToggleUserStatus" method="post" style="display: none;">
+    <input type="hidden" id="toggleUserId" name="id" />
+</form>
+
+@section Scripts {
+    <script>
+        function deleteUser(userId, userName) {
+            if (confirm(`Are you sure you want to delete customer "${userName}"?`)) {
+                document.getElementById('deleteUserId').value = userId;
+                document.getElementById('deleteUserForm').submit();
+            }
+        }
+
+        function toggleUserStatus(userId, userName, isActive) {
+            const action = isActive === 'true' ? 'deactivate' : 'activate';
+            if (confirm(`Are you sure you want to ${action} customer "${userName}"?`)) {
+                document.getElementById('toggleUserId').value = userId;
+                document.getElementById('toggleUserStatusForm').submit();
+            }
+        }
+
+        function exportTable() {
+            const table = document.getElementById('customersTable');
+            const html = table.outerHTML;
+            const url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            downloadLink.href = url;
+            downloadLink.download = 'customers.xls';
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+
+        $(document).ready(function() {
+            if ($.fn.DataTable) {
+                $('#customersTable').DataTable({
+                    "order": [[0, "desc"]],
+                    "pageLength": 25
+                });
+            }
+        });
+    </script>
+} 

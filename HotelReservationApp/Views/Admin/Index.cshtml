@@ -14,7 +14,7 @@
 </div>
 
 <!-- Statistics Cards -->
-<div class="row mb-4">
+<div class="row mb-4" id="statsCards">
     <div class="col-xl-3 col-md-6 mb-4">
         <div class="card stat-card navy shadow h-100 py-2">
             <div class="card-body">
@@ -23,7 +23,7 @@
                         <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
                             Total Users
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalUsers</div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="totalUsers">@ViewBag.TotalUsers</div>
                     </div>
                     <div class="col-auto">
                         <i class="fas fa-users stat-icon"></i>
@@ -41,7 +41,7 @@
                         <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
                             Total Hotels
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalHotels</div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="totalHotels">@ViewBag.TotalHotels</div>
                     </div>
                     <div class="col-auto">
                         <i class="fas fa-building stat-icon"></i>
@@ -59,7 +59,7 @@
                         <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
                             Total Reservations
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalReservations</div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="totalReservations">@ViewBag.TotalReservations</div>
                     </div>
                     <div class="col-auto">
                         <i class="fas fa-calendar-check stat-icon"></i>
@@ -77,7 +77,7 @@
                         <div class="text-xs font-weight-bold text-white-50 text-uppercase mb-1">
                             Total Reviews
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-white">@ViewBag.TotalReviews</div>
+                        <div class="h5 mb-0 font-weight-bold text-white" id="totalReviews">@ViewBag.TotalReviews</div>
                     </div>
                     <div class="col-auto">
                         <i class="fas fa-star stat-icon"></i>
@@ -98,24 +98,24 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <a asp-controller="Admin" asp-action="Users" class="btn btn-navy btn-block w-100">
+                        <button class="btn btn-navy btn-block w-100 quick-action-btn" data-action="users">
                             <i class="fas fa-users me-2"></i>Manage Users
-                        </a>
+                        </button>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a asp-controller="Admin" asp-action="Hotels" class="btn btn-orange btn-block w-100">
+                        <button class="btn btn-orange btn-block w-100 quick-action-btn" data-action="hotels">
                             <i class="fas fa-building me-2"></i>Manage Hotels
-                        </a>
+                        </button>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a asp-controller="Admin" asp-action="Reservations" class="btn btn-navy btn-block w-100">
+                        <button class="btn btn-navy btn-block w-100 quick-action-btn" data-action="reservations">
                             <i class="fas fa-calendar-check me-2"></i>View Reservations
-                        </a>
+                        </button>
                     </div>
                     <div class="col-md-3 mb-3">
-                        <a asp-controller="Admin" asp-action="Reviews" class="btn btn-orange btn-block w-100">
+                        <button class="btn btn-orange btn-block w-100 quick-action-btn" data-action="reviews">
                             <i class="fas fa-star me-2"></i>Manage Reviews
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -140,16 +140,11 @@
                                 <th>Role</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="recentUsersTable">
                             <tr>
-                                <td>John Doe</td>
-                                <td>john@example.com</td>
-                                <td><span class="badge bg-primary">Customer</span></td>
-                            </tr>
-                            <tr>
-                                <td>Jane Smith</td>
-                                <td>jane@example.com</td>
-                                <td><span class="badge bg-success">Hotel Manager</span></td>
+                                <td colspan="3" class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -173,16 +168,11 @@
                                 <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="recentReservationsTable">
                             <tr>
-                                <td>John Doe</td>
-                                <td>Grand Hotel</td>
-                                <td><span class="badge bg-success">Confirmed</span></td>
-                            </tr>
-                            <tr>
-                                <td>Jane Smith</td>
-                                <td>Luxury Resort</td>
-                                <td><span class="badge bg-warning">Pending</span></td>
+                                <td colspan="3" class="text-center">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -194,10 +184,184 @@
 
 @section Scripts {
     <script>
-        // Auto-refresh dashboard stats every 30 seconds
-        setInterval(function() {
-            // You can add AJAX call here to refresh stats
-            console.log('Dashboard stats refreshed');
-        }, 30000);
+        $(document).ready(function() {
+            // Sayfa yüklendiğinde dashboard verilerini yükle
+            loadDashboardData();
+            
+            // Quick Action butonları için click event listener
+            $('.quick-action-btn').click(function() {
+                var action = $(this).data('action');
+                handleQuickAction(action);
+            });
+            
+            // Her 30 saniyede bir dashboard verilerini güncelle
+            setInterval(function() {
+                loadDashboardData();
+            }, 30000);
+        });
+        
+        // Dashboard verilerini AJAX ile yükle
+        function loadDashboardData() {
+            $.ajax({
+                url: '@Url.Action("GetDashboardStats", "Admin")',
+                type: 'GET',
+                success: function(data) {
+                    // İstatistikleri güncelle
+                    $('#totalUsers').text(data.totalUsers);
+                    $('#totalHotels').text(data.totalHotels);
+                    $('#totalReservations').text(data.totalReservations);
+                    $('#totalReviews').text(data.totalReviews);
+                    
+                    // Recent reservations tablosunu güncelle
+                    updateRecentReservations(data.recentReservations);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Dashboard verileri yüklenirken hata:', error);
+                    showAlert('Dashboard verileri yüklenirken bir hata oluştu.', 'danger');
+                }
+            });
+            
+            // Recent users verilerini ayrı olarak yükle
+            loadRecentUsers();
+        }
+        
+        // Recent users verilerini yükle
+        function loadRecentUsers() {
+            $.ajax({
+                url: '@Url.Action("GetUsersData", "Admin")',
+                type: 'GET',
+                success: function(data) {
+                    updateRecentUsers(data.slice(0, 5)); // Son 5 kullanıcıyı al
+                },
+                error: function(xhr, status, error) {
+                    console.error('Kullanıcı verileri yüklenirken hata:', error);
+                }
+            });
+        }
+        
+        // Recent users tablosunu güncelle
+        function updateRecentUsers(users) {
+            var tbody = $('#recentUsersTable');
+            tbody.empty();
+            
+            if (users && users.length > 0) {
+                users.forEach(function(user) {
+                    var badgeClass = getBadgeClass(user.roleName);
+                    var row = `
+                        <tr>
+                            <td>${user.fullName}</td>
+                            <td>${user.email}</td>
+                            <td><span class="badge ${badgeClass}">${user.roleName}</span></td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            } else {
+                tbody.append('<tr><td colspan="3" class="text-center">Henüz kullanıcı bulunmuyor.</td></tr>');
+            }
+        }
+        
+        // Recent reservations tablosunu güncelle
+        function updateRecentReservations(reservations) {
+            var tbody = $('#recentReservationsTable');
+            tbody.empty();
+            
+            if (reservations && reservations.length > 0) {
+                reservations.forEach(function(reservation) {
+                    var statusBadge = getStatusBadge(reservation.status);
+                    var row = `
+                        <tr>
+                            <td>${reservation.user ? reservation.user.fullName : 'N/A'}</td>
+                            <td>${reservation.room && reservation.room.hotel ? reservation.room.hotel.name : 'N/A'}</td>
+                            <td>${statusBadge}</td>
+                        </tr>
+                    `;
+                    tbody.append(row);
+                });
+            } else {
+                tbody.append('<tr><td colspan="3" class="text-center">Henüz rezervasyon bulunmuyor.</td></tr>');
+            }
+        }
+        
+        // Role'e göre badge class'ı belirle
+        function getBadgeClass(roleName) {
+            switch(roleName) {
+                case 'Admin':
+                    return 'bg-danger';
+                case 'Hotel Manager':
+                    return 'bg-success';
+                case 'Customer':
+                    return 'bg-primary';
+                default:
+                    return 'bg-secondary';
+            }
+        }
+        
+        // Status'e göre badge oluştur
+        function getStatusBadge(status) {
+            var badgeClass = '';
+            switch(status) {
+                case 'Confirmed':
+                    badgeClass = 'bg-success';
+                    break;
+                case 'Pending':
+                    badgeClass = 'bg-warning';
+                    break;
+                case 'Cancelled':
+                    badgeClass = 'bg-danger';
+                    break;
+                default:
+                    badgeClass = 'bg-secondary';
+            }
+            return `<span class="badge ${badgeClass}">${status}</span>`;
+        }
+        
+        // Quick Action butonları için handler
+        function handleQuickAction(action) {
+            var url = '';
+            switch(action) {
+                case 'users':
+                    url = '@Url.Action("Users", "Admin")';
+                    break;
+                case 'hotels':
+                    url = '@Url.Action("Hotels", "Admin")';
+                    break;
+                case 'reservations':
+                    url = '@Url.Action("Reservations", "Admin")';
+                    break;
+                case 'reviews':
+                    url = '@Url.Action("Reviews", "Admin")';
+                    break;
+            }
+            
+            if (url) {
+                // Smooth transition effect
+                $('body').fadeOut(200, function() {
+                    window.location.href = url;
+                });
+            }
+        }
+        
+        // Alert gösterme fonksiyonu
+        function showAlert(message, type) {
+            var alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // Alert'i sayfanın üstüne ekle
+            if ($('.alert-container').length === 0) {
+                $('body').prepend('<div class="alert-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; width: 300px;"></div>');
+            }
+            
+            $('.alert-container').append(alertHtml);
+            
+            // 5 saniye sonra otomatik kapat
+            setTimeout(function() {
+                $('.alert').fadeOut();
+            }, 5000);
+        }
     </script>
 }

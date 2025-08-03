@@ -28,6 +28,7 @@ namespace HotelReservationApp.Controllers
                 .Reservations.Include(r => r.User)
                 .Include(r => r.Room)
                 .ThenInclude(room => room.Hotel)
+                .Include(r => r.Room.RoomImages)
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
 
@@ -47,6 +48,7 @@ namespace HotelReservationApp.Controllers
                 .Reservations.Where(r => r.UserID == userId)
                 .Include(r => r.Room)
                 .ThenInclude(room => room.Hotel)
+                .Include(r => r.Room.RoomImages)
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
 
@@ -54,11 +56,12 @@ namespace HotelReservationApp.Controllers
         }
 
         // Create reservation (customer)
-        public async Task<IActionResult> Create(int roomId)
+        public async Task<IActionResult> Create(int roomId, DateTime? checkIn = null, DateTime? checkOut = null, int? guestCount = null)
         {
             var room = await _context
                 .Rooms.Include(r => r.Hotel)
                 .Include(r => r.RoomType)
+                .Include(r => r.RoomImages)
                 .FirstOrDefaultAsync(r => r.RoomID == roomId);
 
             if (room == null)
@@ -67,9 +70,9 @@ namespace HotelReservationApp.Controllers
             var reservation = new Reservation
             {
                 RoomID = roomId,
-                CheckInDate = DateTime.Today,
-                CheckOutDate = DateTime.Today.AddDays(1),
-                GuestCount = 1,
+                CheckInDate = checkIn ?? DateTime.Today.AddDays(1),
+                CheckOutDate = checkOut ?? DateTime.Today.AddDays(2),
+                GuestCount = guestCount ?? 1,
             };
 
             ViewBag.Room = room;
@@ -78,68 +81,74 @@ namespace HotelReservationApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Reservation reservation)
+        public async Task<IActionResult> Create([FromBody] Reservation reservation)
         {
             if (ModelState.IsValid)
             {
-                // Get user ID from claims
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                try
                 {
-                    return RedirectToAction("Login", "Account");
-                }
+                    // Get user ID from claims
+                    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                    if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                    {
+                        return Json(new { success = false, message = "Kullanıcı girişi gerekli." });
+                    }
 
-                // Validate dates
-                if (reservation.CheckInDate >= reservation.CheckOutDate)
+                    // Validate dates
+                    if (reservation.CheckInDate >= reservation.CheckOutDate)
+                    {
+                        return Json(new { success = false, message = "Çıkış tarihi, giriş tarihinden sonra olmalıdır." });
+                    }
+
+                    if (reservation.CheckInDate < DateTime.Today)
+                    {
+                        return Json(new { success = false, message = "Giriş tarihi geçmiş bir tarih olamaz." });
+                    }
+
+                    // Check room availability
+                    var conflictingReservations = await _context.Reservations
+                        .Where(r => r.RoomID == reservation.RoomID && 
+                                   r.Status != "Cancelled" &&
+                                   ((r.CheckInDate <= reservation.CheckInDate && r.CheckOutDate > reservation.CheckInDate) ||
+                                    (r.CheckInDate < reservation.CheckOutDate && r.CheckOutDate >= reservation.CheckOutDate) ||
+                                    (r.CheckInDate >= reservation.CheckInDate && r.CheckOutDate <= reservation.CheckOutDate)))
+                        .ToListAsync();
+
+                    if (conflictingReservations.Any())
+                    {
+                        return Json(new { success = false, message = "Seçilen tarihler için oda müsait değil." });
+                    }
+
+                    reservation.UserID = userId;
+                    reservation.CreatedDate = DateTime.Now;
+                    reservation.Status = "Confirmed";
+                    
+                    // Calculate total amount
+                    reservation.TotalAmount = await CalculateTotalAmount(
+                        reservation.RoomID,
+                        reservation.CheckInDate,
+                        reservation.CheckOutDate
+                    );
+
+                    _context.Reservations.Add(reservation);
+                    await _context.SaveChangesAsync();
+
+                    return Json(new { 
+                        success = true, 
+                        message = "Rezervasyonunuz başarıyla oluşturuldu.",
+                        redirectTo = Url.Action(nameof(MyReservations)) 
+                    });
+                }
+                catch (Exception ex)
                 {
-                    ModelState.AddModelError("CheckOutDate", "Check-out date must be after check-in date.");
-                    ViewBag.Room = await _context.Rooms.Include(r => r.Hotel).Include(r => r.RoomType).FirstOrDefaultAsync(r => r.RoomID == reservation.RoomID);
-                    return View(reservation);
+                    return Json(new { success = false, message = "Rezervasyon oluşturulurken bir hata oluştu: " + ex.Message });
                 }
-
-                if (reservation.CheckInDate < DateTime.Today)
-                {
-                    ModelState.AddModelError("CheckInDate", "Check-in date cannot be in the past.");
-                    ViewBag.Room = await _context.Rooms.Include(r => r.Hotel).Include(r => r.RoomType).FirstOrDefaultAsync(r => r.RoomID == reservation.RoomID);
-                    return View(reservation);
-                }
-
-                // Check room availability
-                var conflictingReservations = await _context.Reservations
-                    .Where(r => r.RoomID == reservation.RoomID && 
-                               r.Status != "Cancelled" &&
-                               ((r.CheckInDate <= reservation.CheckInDate && r.CheckOutDate > reservation.CheckInDate) ||
-                                (r.CheckInDate < reservation.CheckOutDate && r.CheckOutDate >= reservation.CheckOutDate) ||
-                                (r.CheckInDate >= reservation.CheckInDate && r.CheckOutDate <= reservation.CheckOutDate)))
-                    .ToListAsync();
-
-                if (conflictingReservations.Any())
-                {
-                    ModelState.AddModelError("", "The room is not available for the selected dates.");
-                    ViewBag.Room = await _context.Rooms.Include(r => r.Hotel).Include(r => r.RoomType).FirstOrDefaultAsync(r => r.RoomID == reservation.RoomID);
-                    return View(reservation);
-                }
-
-                reservation.UserID = userId;
-                reservation.CreatedDate = DateTime.Now;
-                reservation.Status = "Confirmed";
-                
-                // Calculate total amount
-                reservation.TotalAmount = await CalculateTotalAmount(
-                    reservation.RoomID,
-                    reservation.CheckInDate,
-                    reservation.CheckOutDate
-                );
-
-                _context.Reservations.Add(reservation);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = "Reservation created successfully!";
-                return RedirectToAction(nameof(MyReservations));
             }
 
-            ViewBag.Room = await _context.Rooms.Include(r => r.Hotel).Include(r => r.RoomType).FirstOrDefaultAsync(r => r.RoomID == reservation.RoomID);
-            return View(reservation);
+            var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                         .Select(e => e.ErrorMessage)
+                                         .ToList();
+            return Json(new { success = false, errors = errors });
         }
 
         // Details (Admin & Manager)
@@ -152,6 +161,7 @@ namespace HotelReservationApp.Controllers
                 .ThenInclude(room => room.Hotel)
                 .ThenInclude(hotel => hotel.City)
                 .Include(r => r.Room.RoomType)
+                .Include(r => r.Room.RoomImages)
                 .FirstOrDefaultAsync(r => r.ReservationID == id);
 
             if (reservation == null)

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -76,11 +76,11 @@
                     </button>
                     <div class="collapse navbar-collapse justify-content-between" id="navbarCollapse">
                         <div class="navbar-nav mr-auto py-0">
-                            <a asp-controller="Home" asp-action="Index" class="nav-item nav-link">Ana Sayfa</a>
-                            <a asp-controller="Home" asp-action="About" class="nav-item nav-link">Hakkımızda</a>
-                            <a asp-controller="Home" asp-action="Services" class="nav-item nav-link">Hizmetler</a>
-                            <a asp-controller="Room" asp-action="Index" class="nav-item nav-link">Odalar</a>
-                            <a asp-controller="Home" asp-action="Contact" class="nav-item nav-link">İletişim</a>
+                            <a asp-controller="Home" asp-action="Index" class="nav-item nav-link">Home</a>
+                            <a asp-controller="Home" asp-action="About" class="nav-item nav-link">About</a>
+                            <a asp-controller="Home" asp-action="Services" class="nav-item nav-link">Services</a>
+                            <a asp-controller="Room" asp-action="Index" class="nav-item nav-link">Rooms</a>
+                            <a asp-controller="Home" asp-action="Contact" class="nav-item nav-link">Contact</a>
                             
                             @if (User.Identity.IsAuthenticated)
                             {
@@ -97,19 +97,15 @@
                         @if (User.Identity.IsAuthenticated)
                         {
                             <div class="d-flex align-items-center">
-                                <a asp-controller="Reservation" asp-action="Index"
-                                    class="btn btn-primary rounded-0 py-4 px-md-5 d-none d-lg-block me-3">
-                                    Rezervasyon <i class="fa fa-arrow-right ms-3"></i>
-                                </a>
                                 <div class="dropdown">
                                     <button class="btn btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fa fa-user me-2"></i>@User.Identity.Name
                                     </button>
                                     <ul class="dropdown-menu" aria-labelledby="userDropdown">
-                                        <li><a class="dropdown-item" href="#"><i class="fa fa-user me-2"></i>Profil</a></li>
-                                        <li><a class="dropdown-item" href="#"><i class="fa fa-list me-2"></i>Rezervasyonlarım</a></li>
+                                        <li><a class="dropdown-item" href="#"><i class="fa fa-user me-2"></i>Profile</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Reservation" asp-action="MyReservations"><i class="fa fa-list me-2"></i>My Reservations</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Logout"><i class="fa fa-sign-out-alt me-2"></i>Çıkış Yap</a></li>
+                                        <li><a class="dropdown-item" asp-controller="Account" asp-action="Logout"><i class="fa fa-sign-out-alt me-2"></i>Logout</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -239,7 +235,30 @@
     <script src="~/lib/tempusdominus/js/moment.min.js"></script>
     <script src="~/lib/tempusdominus/js/moment-timezone.min.js"></script>
     <script src="~/lib/tempusdominus/js/tempusdominus-bootstrap-4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
     <script src="~/js/main.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Toast mesajı ayarları
+            toastr.options = {
+                "closeButton": true,
+                "progressBar": true,
+                "positionClass": "toast-top-right",
+                "timeOut": "5000"
+            };
+
+            // TempData'dan gelen mesajı kontrol et ve göster
+            @if (TempData["ToastMessage"] != null)
+            {
+                <text>
+                var type = '@TempData["ToastType"]' || 'info';
+                toastr[type]('@TempData["ToastMessage"]');
+                </text>
+            }
+        });
+    </script>
 
     @RenderSection("Scripts", required: false)
 </body>

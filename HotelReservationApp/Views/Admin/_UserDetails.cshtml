@@ -1,0 +1,140 @@
+@model HotelReservationApp.Models.User
+
+<div class="row">
+    <div class="col-md-6">
+        <h6 class="text-navy mb-3">User Information</h6>
+        <table class="table table-borderless">
+            <tr>
+                <td><strong>ID:</strong></td>
+                <td>@Model.UserID</td>
+            </tr>
+            <tr>
+                <td><strong>Name:</strong></td>
+                <td>@Model.FullName</td>
+            </tr>
+            <tr>
+                <td><strong>Email:</strong></td>
+                <td>@Model.Email</td>
+            </tr>
+            <tr>
+                <td><strong>Phone:</strong></td>
+                <td>@Model.Phone</td>
+            </tr>
+            <tr>
+                <td><strong>Role:</strong></td>
+                <td>
+                    <span class="badge @(Model.Role?.RoleName == "Admin" ? "badge-navy" : 
+                                       Model.Role?.RoleName == "Hotel Manager" ? "badge-orange" : "badge-navy")">
+                        @Model.Role?.RoleName
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Status:</strong></td>
+                <td>
+                    <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger")">
+                        @(Model.IsActive ? "Active" : "Inactive")
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Created Date:</strong></td>
+                <td>@Model.CreatedDate.ToString("MMM dd, yyyy")</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="col-md-6">
+        <h6 class="text-orange mb-3">Statistics</h6>
+        <div class="row">
+            <div class="col-6 mb-3">
+                <div class="card stat-card navy text-center">
+                    <div class="card-body">
+                        <h4 class="text-white">@(Model.Reservations?.Count ?? 0)</h4>
+                        <small class="text-white-50">Reservations</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 mb-3">
+                <div class="card stat-card orange text-center">
+                    <div class="card-body">
+                        <h4 class="text-white">@(Model.Reviews?.Count ?? 0)</h4>
+                        <small class="text-white-50">Reviews</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Reservations?.Any() == true)
+{
+    <div class="mt-4">
+        <h6 class="text-navy mb-3">Recent Reservations</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Hotel</th>
+                        <th>Room</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reservation in Model.Reservations.Take(5))
+                    {
+                        <tr>
+                            <td>@reservation.Room?.Hotel?.Name</td>
+                            <td>@reservation.Room?.RoomNumber</td>
+                            <td>@reservation.CheckInDate.ToString("MMM dd, yyyy")</td>
+                            <td>@reservation.CheckOutDate.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <span class="badge @(reservation.Status == "Confirmed" ? "bg-success" : 
+                                                   reservation.Status == "Pending" ? "bg-warning" : "bg-danger")">
+                                    @reservation.Status
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Model.Reviews?.Any() == true)
+{
+    <div class="mt-4">
+        <h6 class="text-orange mb-3">Recent Reviews</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Hotel</th>
+                        <th>Rating</th>
+                        <th>Comment</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var review in Model.Reviews.Take(5))
+                    {
+                        <tr>
+                            <td>@review.Hotel?.Name</td>
+                            <td>
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <i class="fas fa-star @(i <= review.Rating ? "text-warning" : "text-muted")"></i>
+                                }
+                            </td>
+                            <td>@(review.Comment?.Length > 50 ? review.Comment.Substring(0, 50) + "..." : review.Comment)</td>
+                            <td>@review.ReviewDate?.ToString("MMM dd, yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+} 

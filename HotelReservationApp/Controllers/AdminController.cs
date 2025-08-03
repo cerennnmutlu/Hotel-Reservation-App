@@ -36,8 +36,181 @@ namespace HotelReservationApp.Controllers
         // Kullanıcıları listeleme
         public async Task<IActionResult> Users()
         {
-            var users = await _context.Users.ToListAsync();
+            var users = await _context.Users
+                .Include(u => u.Role)
+                .OrderByDescending(u => u.CreatedDate)
+                .ToListAsync();
             return View(users);
+        }
+
+        // Müşterileri listeleme
+        public async Task<IActionResult> Customers()
+        {
+            var customers = await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.Role.RoleName == "Customer")
+                .OrderByDescending(u => u.CreatedDate)
+                .ToListAsync();
+            return View(customers);
+        }
+
+        // Hotel Manager'ları listeleme
+        public async Task<IActionResult> HotelManagers()
+        {
+            var managers = await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.Role.RoleName == "Hotel Manager")
+                .OrderByDescending(u => u.CreatedDate)
+                .ToListAsync();
+            return View(managers);
+        }
+
+        // Admin'leri listeleme
+        public async Task<IActionResult> Admins()
+        {
+            var admins = await _context.Users
+                .Include(u => u.Role)
+                .Where(u => u.Role.RoleName == "Admin")
+                .OrderByDescending(u => u.CreatedDate)
+                .ToListAsync();
+            return View(admins);
+        }
+
+        // Kullanıcı detaylarını görüntüleme
+        public async Task<IActionResult> UserDetails(int id)
+        {
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .Include(u => u.Reservations)
+                .ThenInclude(r => r.Room)
+                .ThenInclude(r => r.Hotel)
+                .Include(u => u.Reviews)
+                .ThenInclude(r => r.Hotel)
+                .FirstOrDefaultAsync(u => u.UserID == id);
+
+            if (user == null)
+                return Json(new { success = false, message = "User not found." });
+
+            return PartialView("_UserDetails", user);
+        }
+
+        // Kullanıcı oluşturma sayfası
+        public async Task<IActionResult> CreateUser()
+        {
+            ViewBag.Roles = await _context.Roles.ToListAsync();
+            return View();
+        }
+
+        // Kullanıcı oluşturma
+        [HttpPost]
+        public async Task<IActionResult> CreateUser(User user)
+        {
+            if (ModelState.IsValid)
+            {
+                // Email kontrolü
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
+                if (existingUser != null)
+                {
+                    return Json(new { success = false, message = "This email is already registered." });
+                }
+
+                user.CreatedDate = DateTime.Now;
+                // Şifre doğrudan PasswordHash alanına kaydediliyor
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "User created successfully!" });
+            }
+
+            return Json(new { success = false, message = "Failed to create user. Please check the form." });
+        }
+
+        // Kullanıcı düzenleme sayfası
+        public async Task<IActionResult> EditUser(int id)
+        {
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u => u.UserID == id);
+
+            if (user == null)
+                return NotFound();
+
+            ViewBag.Roles = await _context.Roles.ToListAsync();
+            return View(user);
+        }
+
+        // Kullanıcı düzenleme
+        [HttpPost]
+        public async Task<IActionResult> EditUser(User user)
+        {
+            if (ModelState.IsValid)
+            {
+                var existingUser = await _context.Users.FindAsync(user.UserID);
+                if (existingUser == null)
+                    return Json(new { success = false, message = "User not found." });
+
+                // Email kontrolü (kendi email'i hariç)
+                var emailExists = await _context.Users
+                    .AnyAsync(u => u.Email == user.Email && u.UserID != user.UserID);
+                if (emailExists)
+                {
+                    return Json(new { success = false, message = "This email is already registered." });
+                }
+
+                existingUser.FullName = user.FullName;
+                existingUser.Email = user.Email;
+                existingUser.Phone = user.Phone;
+                existingUser.RoleID = user.RoleID;
+                existingUser.IsActive = user.IsActive;
+
+                // Şifre değiştirilmişse güncelle
+                if (!string.IsNullOrEmpty(user.PasswordHash))
+                {
+                    existingUser.PasswordHash = user.PasswordHash;
+                }
+
+                await _context.SaveChangesAsync();
+                return Json(new { success = true, message = "User updated successfully!" });
+            }
+
+            return Json(new { success = false, message = "Failed to update user. Please check the form." });
+        }
+
+        // Kullanıcı silme
+        [HttpPost]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+            var user = await _context.Users
+                .Include(u => u.Reservations)
+                .Include(u => u.Reviews)
+                .FirstOrDefaultAsync(u => u.UserID == id);
+
+            if (user == null)
+                return Json(new { success = false, message = "User not found." });
+
+            // Kullanıcının rezervasyonları veya yorumları varsa silme
+            if (user.Reservations.Any() || user.Reviews.Any())
+            {
+                return Json(new { success = false, message = "Cannot delete user with existing reservations or reviews." });
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = "User deleted successfully!" });
+        }
+
+        // Kullanıcı durumunu değiştirme (aktif/pasif)
+        [HttpPost]
+        public async Task<IActionResult> ToggleUserStatus(int id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null)
+                return Json(new { success = false, message = "User not found." });
+
+            user.IsActive = !user.IsActive;
+            await _context.SaveChangesAsync();
+
+            var status = user.IsActive ? "activated" : "deactivated";
+            return Json(new { success = true, message = $"User {status} successfully!" });
         }
 
         // Otelleri listeleme
@@ -70,66 +243,6 @@ namespace HotelReservationApp.Controllers
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
             return View(reservations);
-        }
-
-        // Kullanıcı oluşturma
-        [HttpPost]
-        public async Task<IActionResult> CreateUser(User user)
-        {
-            if (ModelState.IsValid)
-            {
-                user.CreatedDate = DateTime.Now;
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "User created successfully!";
-                return RedirectToAction(nameof(Users));
-            }
-
-            TempData["ErrorMessage"] = "Failed to create user. Please check the form.";
-            return RedirectToAction(nameof(Users));
-        }
-
-        // Kullanıcı silme
-        [HttpPost]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-                return NotFound();
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "User deleted successfully!";
-            return RedirectToAction(nameof(Users));
-        }
-
-        // Kullanıcı düzenleme
-        public async Task<IActionResult> EditUser(int id)
-        {
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.UserID == id);
-            
-            if (user == null)
-                return NotFound();
-
-            ViewBag.Roles = await _context.Roles.ToListAsync();
-            return View(user);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> EditUser(User user)
-        {
-            if (ModelState.IsValid)
-            {
-                _context.Update(user);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "User updated successfully!";
-                return RedirectToAction(nameof(Users));
-            }
-
-            ViewBag.Roles = await _context.Roles.ToListAsync();
-            return View(user);
         }
 
         // Otel oluşturma
@@ -191,6 +304,21 @@ namespace HotelReservationApp.Controllers
             return View(hotel);
         }
 
+        // Otel odalarını listeleme
+        public async Task<IActionResult> HotelRooms(int id)
+        {
+            var hotel = await _context.Hotels
+                .Include(h => h.Rooms)
+                .ThenInclude(r => r.RoomType)
+                .FirstOrDefaultAsync(h => h.HotelID == id);
+            
+            if (hotel == null)
+                return NotFound();
+
+            ViewBag.HotelName = hotel.Name;
+            return View(hotel.Rooms);
+        }
+
         // Rezervasyon durumu güncelleme
         [HttpPost]
         public async Task<IActionResult> UpdateReservationStatus(int id, string status)
@@ -219,12 +347,11 @@ namespace HotelReservationApp.Controllers
 
             _context.Reviews.Remove(review);
             await _context.SaveChangesAsync();
-            
             TempData["SuccessMessage"] = "Review deleted successfully!";
             return RedirectToAction(nameof(Reviews));
         }
 
-        // Review detayları için AJAX endpoint
+        // Yorum detaylarını getir
         public async Task<IActionResult> GetReviewDetails(int id)
         {
             var review = await _context.Reviews
@@ -236,19 +363,22 @@ namespace HotelReservationApp.Controllers
             if (review == null)
                 return NotFound();
 
-            var reviewData = new
+            var reviewDetails = new
             {
+                reviewId = review.ReviewID,
                 userName = review.User?.FullName,
                 userEmail = review.User?.Email,
                 hotelName = review.Hotel?.Name,
                 hotelCity = review.Hotel?.City?.CityName,
                 rating = review.Rating,
                 comment = review.Comment,
-                reviewDate = review.ReviewDate?.ToString("yyyy-MM-dd") ?? ""
+                reviewDate = review.ReviewDate?.ToString("MMM dd, yyyy")
             };
 
-            return Json(reviewData);
+            return Json(reviewDetails);
         }
+
+
 
         // Dashboard istatistikleri
         public async Task<IActionResult> GetDashboardStats()
@@ -262,12 +392,50 @@ namespace HotelReservationApp.Controllers
                 RecentReservations = await _context.Reservations
                     .Include(r => r.User)
                     .Include(r => r.Room)
+                    .ThenInclude(room => room.Hotel)
                     .OrderByDescending(r => r.CreatedDate)
                     .Take(5)
+                    .Select(r => new {
+                        r.ReservationID,
+                        r.Status,
+                        r.CreatedDate,
+                        User = new {
+                            r.User.FullName,
+                            r.User.Email
+                        },
+                        Room = new {
+                            r.Room.RoomNumber,
+                            Hotel = new {
+                                r.Room.Hotel.Name
+                            }
+                        }
+                    })
                     .ToListAsync()
             };
 
             return Json(stats);
+        }
+
+        // AJAX için kullanıcı verilerini getir
+        public async Task<IActionResult> GetUsersData()
+        {
+            var users = await _context.Users
+                .Include(u => u.Role)
+                .OrderByDescending(u => u.CreatedDate)
+                .Select(u => new
+                {
+                    userID = u.UserID,
+                    fullName = u.FullName,
+                    email = u.Email,
+                    phone = u.Phone,
+                    roleID = u.RoleID,
+                    roleName = u.Role.RoleName,
+                    isActive = u.IsActive,
+                    createdDate = u.CreatedDate
+                })
+                .ToListAsync();
+
+            return Json(users);
         }
     }
 }

@@ -28,24 +28,20 @@ namespace HotelReservationApp.Controllers
         // POST: /Account/Login
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(string username, string password)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
-            // Debug için log
-            Console.WriteLine($"Login attempt - Username: {username}, Password: {password}");
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Error = "Lütfen tüm alanları doldurunuz.";
+                return View(model);
+            }
             
             // Veritabanından kullanıcıyı bul
             var user = await _context.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == username);
+                .FirstOrDefaultAsync(u => u.Email == model.Username);
 
-            Console.WriteLine($"User found: {user != null}");
-            if (user != null)
-            {
-                Console.WriteLine($"User ID: {user.UserID}, Name: {user.FullName}, Role: {user.Role?.RoleName}");
-                Console.WriteLine($"Password match: {user.PasswordHash == password}");
-            }
-
-            if (user != null && user.PasswordHash == password) // Gerçek uygulamada hash kontrolü yapılmalı
+            if (user != null && user.PasswordHash == model.Password) // Gerçek uygulamada hash kontrolü yapılmalı
             {
                 var claims = new List<Claim>
                 {
@@ -66,7 +62,7 @@ namespace HotelReservationApp.Controllers
                     case "admin":
                         return RedirectToAction("Index", "Admin");
                     case "hotel manager":
-                        return RedirectToAction("Index", "HotelManager"); // DÜZELTİLDİ
+                        return RedirectToAction("Index", "HotelManager");
                     case "customer":
                     default:
                         return RedirectToAction("Index", "Home");
@@ -74,7 +70,7 @@ namespace HotelReservationApp.Controllers
             }
 
             ViewBag.Error = "Geçersiz kullanıcı adı veya şifre.";
-            return View();
+            return View(model);
         }
 
         // GET: /Account/Logout
