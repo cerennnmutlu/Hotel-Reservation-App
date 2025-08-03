@@ -9,8 +9,33 @@
         <div class="col-md-6">
             @if (Model.RoomImages != null && Model.RoomImages.Any())
             {
-                <img src="@Model.RoomImages.First().ImageUrl" alt="Room Image"
-                    class="img-fluid rounded mb-3" style="height: 300px; width: 100%; object-fit: cover;" />
+                <!-- Image Carousel -->
+                <div id="roomImageCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        @{
+                            var isFirst = true;
+                        }
+                        @foreach (var image in Model.RoomImages)
+                        {
+                            <div class="carousel-item @(isFirst ? "active" : "")">
+                                <img src="@image.ImageUrl" alt="Room Image"
+                                    class="d-block w-100 rounded" style="height: 300px; object-fit: cover;" />
+                            </div>
+                            isFirst = false;
+                        }
+                    </div>
+                    @if (Model.RoomImages.Count() > 1)
+                    {
+                        <button class="carousel-control-prev" type="button" data-bs-target="#roomImageCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#roomImageCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    }
+                </div>
             }
             else
             {
@@ -93,7 +118,12 @@
 <div class="modal-footer">
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
     <button type="button" class="btn btn-primary" onclick="bookRoomFromModal(@Model.RoomID)">Book Now</button>
-    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    @if (User.IsInRole("Admin"))
+    {
+        <a href="/Admin/HotelRooms" class="btn btn-outline-primary">Edit</a>
+        <a href="/Admin/HotelRooms" class="btn btn-outline-danger">Delete</a>
+    }
+    else if (User.IsInRole("Manager"))
     {
         <a href="/Room/Edit/@Model.RoomID" class="btn btn-outline-primary">Edit</a>
         <a href="/Room/Delete/@Model.RoomID" class="btn btn-outline-danger">Delete</a>

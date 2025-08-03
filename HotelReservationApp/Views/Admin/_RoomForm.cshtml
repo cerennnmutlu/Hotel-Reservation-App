@@ -1,0 +1,178 @@
+@model HotelReservationApp.Models.Room
+
+<div class="modal fade" id="roomModal" tabindex="-1" aria-labelledby="roomModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(Model.RoomID == 0 ? "Add Room" : "Edit Room") - @ViewBag.HotelName</h5>
+                <button type="button" class="btn-close" onclick="closeRoomModal()"></button>
+            </div>
+            <form id="roomForm" method="post" action="@(Model.RoomID == 0 ? "/Admin/AddRoom" : "/Admin/EditRoom")" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" name="RoomID" value="@Model.RoomID" />
+                    <input type="hidden" name="HotelID" value="@Model.HotelID" />
+                    
+                    <div class="mb-3">
+                        <label>Room Number</label>
+                        <input name="RoomNumber" class="form-control" value="@Model.RoomNumber" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Room Type</label>
+                        <select name="RoomTypeID" class="form-control" required>
+                            @foreach (var roomType in ViewBag.RoomTypes)
+                            {
+                                <option value="@roomType.RoomTypeID" selected="@(Model.RoomTypeID == roomType.RoomTypeID)">@roomType.TypeName</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Price per Night</label>
+                        <input type="number" step="0.01" name="PricePerNight" class="form-control" value="@Model.PricePerNight" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Capacity</label>
+                        <input type="number" name="Capacity" class="form-control" value="@Model.Capacity" required />
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isAvailable" name="IsAvailable" @(Model.IsAvailable ? "checked" : "") />
+                        <label class="form-check-label" for="isAvailable">Available</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Room Images</label>
+                        <input type="file" class="form-control" id="roomImages" name="roomImages" multiple accept="image/*" />
+                        <small class="text-muted">You can select multiple images (max 5)</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeRoomModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitRoomForm()">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function closeRoomModal() {
+        $('#roomModal').modal('hide');
+        setTimeout(function() {
+            $('#roomModalContainer').empty();
+            console.log('Room modal closed and container emptied');
+        }, 300);
+    }
+    
+    function submitRoomForm() {
+        var form = $('#roomForm');
+        var hotelId = $('input[name="HotelID"]').val();
+        var roomTypeId = $('select[name="RoomTypeID"]').val();
+        var roomNumber = $('input[name="RoomNumber"]').val();
+        var pricePerNight = $('input[name="PricePerNight"]').val();
+        var capacity = $('input[name="Capacity"]').val();
+        var roomImages = $('#roomImages')[0].files;
+        
+        console.log('Submitting room form with the following data:');
+        console.log('Hotel ID:', hotelId);
+        console.log('Room Type ID:', roomTypeId);
+        console.log('Room Number:', roomNumber);
+        console.log('Price per Night:', pricePerNight);
+        console.log('Capacity:', capacity);
+        console.log('Number of images:', roomImages.length);
+        console.log('Form Action URL:', form.attr('action'));
+        
+        // Validate form data before submission
+        var hasErrors = false;
+        var errorMessages = [];
+        
+        if (!roomTypeId || roomTypeId <= 0) {
+            console.error('Room Type ID is missing or invalid');
+            errorMessages.push('Please select a valid room type');
+            hasErrors = true;
+        }
+        
+        if (!roomNumber || roomNumber.trim() === '') {
+            console.error('Room Number is missing');
+            errorMessages.push('Please enter a room number');
+            hasErrors = true;
+        }
+        
+        if (!pricePerNight || pricePerNight <= 0) {
+            console.error('Price per Night is missing or invalid');
+            errorMessages.push('Please enter a valid price per night');
+            hasErrors = true;
+        }
+        
+        if (!capacity || capacity <= 0) {
+            console.error('Capacity is missing or invalid');
+            errorMessages.push('Please enter a valid capacity');
+            hasErrors = true;
+        }
+        
+        if (hasErrors) {
+            alert(errorMessages.join('\n'));
+            return;
+        }
+        
+        // Create FormData object to handle file uploads
+        var formData = new FormData(form[0]);
+        
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: formData,
+            processData: false,  // tell jQuery not to process the data
+            contentType: false,  // tell jQuery not to set contentType
+            dataType: 'json',
+            success: function(response) {
+                console.log('Form submission successful:', response);
+                closeRoomModal();
+                if (response.redirectUrl) {
+                    console.log('Redirecting to:', response.redirectUrl);
+                    window.location.href = response.redirectUrl;
+                } else {
+                    console.log('Redirecting to hotel rooms page');
+                    window.location.href = '/Admin/HotelRooms/' + hotelId;
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Form submission error:', status, error);
+                console.error('XHR Status:', xhr.status);
+                console.error('XHR Response Text:', xhr.responseText);
+                
+                try {
+                    var responseObj = JSON.parse(xhr.responseText);
+                    console.error('Parsed response:', responseObj);
+                    
+                    if (responseObj && responseObj.error) {
+                        alert('Error: ' + responseObj.error);
+                    } else if (xhr.status === 400) {
+                        alert('Validation error: Please check all fields and try again.');
+                    } else if (xhr.status === 409) {
+                        alert('A room with this number already exists in this hotel.');
+                    } else {
+                        alert('An error occurred while saving the room. Please try again.');
+                    }
+                } catch (e) {
+                    console.error('Could not parse response as JSON');
+                    
+                    var errorMessage = 'An error occurred while saving the room.';
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                        console.error('Server error message:', errorMessage);
+                    }
+                    
+                    if (xhr.responseText && xhr.responseText.includes('Failed to load the Add Room form')) {
+                        alert('Failed to load the Add Room form. Please try again.');
+                    } else {
+                        alert('Error: ' + errorMessage);
+                    }
+                }
+            }
+        });
+    }
+</script>

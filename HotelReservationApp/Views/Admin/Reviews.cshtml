@@ -1,312 +1,158 @@
-@model IEnumerable<HotelReservationApp.Models.Review>
+@model List<HotelReservationApp.Models.Review>
 @{
-    ViewData["Title"] = "Reviews Management";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Manage Reviews";
 }
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Reviews Management</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportTable()">
-                <i class="fas fa-download me-1"></i>Export
-            </button>
-        </div>
-        <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                <i class="fas fa-filter me-1"></i>Filter Rating
-            </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" onclick="filterByRating('all')">All Ratings</a></li>
-                <li><a class="dropdown-item" href="#" onclick="filterByRating('5')">5 Stars</a></li>
-                <li><a class="dropdown-item" href="#" onclick="filterByRating('4')">4 Stars</a></li>
-                <li><a class="dropdown-item" href="#" onclick="filterByRating('3')">3 Stars</a></li>
-                <li><a class="dropdown-item" href="#" onclick="filterByRating('2')">2 Stars</a></li>
-                <li><a class="dropdown-item" href="#" onclick="filterByRating('1')">1 Star</a></li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                            Total Reviews
+<div class="container py-4">
+    <h2 class="mb-4">Reviews</h2>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Reviews
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count()</div>
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count()</div>
+                        <div class="col-auto">
+                            <i class="fas fa-star fa-2x text-gray-300"></i>
+                        </div>
                     </div>
-                    <div class="col-auto">
-                        <i class="fas fa-star fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Average Rating
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                @(Model.Any() ? Model.Average(r => r.Rating).ToString("F1") : "0.0")
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-star-half-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                5-Star Reviews
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(r => r.Rating == 5)</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-award fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                This Month
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(r => r.ReviewDate?.Month == DateTime.Now.Month)</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            Average Rating
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            @(Model.Any() ? Model.Average(r => r.Rating).ToString("F1") : "0.0")
-                        </div>
+    
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Hotel</th>
+                <th>Rating</th>
+                <th>Comment</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var review in Model)
+        {
+            <tr>
+                <td>@review.ReviewID</td>
+                <td>
+                    <strong>@review.User?.FullName</strong><br>
+                    <small class="text-muted">@review.User?.Email</small>
+                </td>
+                <td>
+                    <strong>@review.Hotel?.Name</strong><br>
+                    <small class="text-muted">@review.Hotel?.City?.CityName</small>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= review.Rating)
+                            {
+                                <i class="fas fa-star text-warning"></i>
+                            }
+                            else
+                            {
+                                <i class="far fa-star text-warning"></i>
+                            }
+                        }
+                        <span class="ms-2 badge bg-primary">@review.Rating/5</span>
                     </div>
-                    <div class="col-auto">
-                        <i class="fas fa-star-half-alt fa-2x text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                            5 Star Reviews
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(r => r.Rating == 5)</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-star fa-2x text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
-            <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                            This Month
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">@Model.Count(r => r.ReviewDate?.Month == DateTime.Now.Month)</div>
-                    </div>
-                    <div class="col-auto">
-                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card shadow mb-4">
-    <div class="card-header py-3">
-        <h6 class="m-0 font-weight-bold text-primary">All Reviews</h6>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered" id="reviewsTable" width="100%" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>User</th>
-                        <th>Hotel</th>
-                        <th>Rating</th>
-                        <th>Comment</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var review in Model)
+                </td>
+                <td>
+                    @if (!string.IsNullOrEmpty(review.Comment))
                     {
-                        <tr data-rating="@review.Rating">
-                            <td>@review.ReviewID</td>
-                            <td>
-                                <strong>@review.User?.FullName</strong><br>
-                                <small class="text-muted">@review.User?.Email</small>
-                            </td>
-                            <td>
-                                <strong>@review.Hotel?.Name</strong><br>
-                                <small class="text-muted">@review.Hotel?.City?.CityName</small>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    @for (int i = 1; i <= 5; i++)
-                                    {
-                                        if (i <= review.Rating)
-                                        {
-                                            <i class="fas fa-star text-warning"></i>
-                                        }
-                                        else
-                                        {
-                                            <i class="far fa-star text-warning"></i>
-                                        }
-                                    }
-                                    <span class="ms-2 badge bg-primary">@review.Rating/5</span>
-                                </div>
-                            </td>
-                            <td>
-                                @if (!string.IsNullOrEmpty(review.Comment))
-                                {
-                                    <div class="text-truncate" style="max-width: 200px;" title="@review.Comment">
-                                        @review.Comment
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">No comment</span>
-                                }
-                            </td>
-                            <td>@(review.ReviewDate?.ToString("MMM dd, yyyy") ?? "N/A")</td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-info" 
-                                            onclick="viewReview(@review.ReviewID)" title="View Details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            onclick="deleteReview(@review.ReviewID, '@review.User?.FullName')" title="Delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                        <div class="text-truncate" style="max-width: 200px;" title="@review.Comment">
+                            @review.Comment
+                        </div>
                     }
-                </tbody>
-            </table>
-        </div>
-    </div>
+                    else
+                    {
+                        <span class="text-muted">No comment</span>
+                    }
+                </td>
+                <td>@(review.ReviewDate?.ToString("MMM dd, yyyy") ?? "N/A")</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="deleteReview(@review.ReviewID)">Delete</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
 </div>
 
-<!-- View Review Modal -->
-<div class="modal fade" id="viewReviewModal" tabindex="-1" aria-labelledby="viewReviewModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="viewReviewModalLabel">Review Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body" id="reviewDetails">
-                <!-- Review details will be loaded here -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete Review Form -->
-<form id="deleteReviewForm" asp-action="DeleteReview" method="post" style="display: none;">
-    <input type="hidden" id="deleteReviewId" name="id" />
-</form>
-
-@section Scripts {
-    <script>
-        function deleteReview(reviewId, userName) {
-            if (confirm(`Are you sure you want to delete review from "${userName}"?`)) {
-                document.getElementById('deleteReviewId').value = reviewId;
-                document.getElementById('deleteReviewForm').submit();
-            }
-        }
-
-        function viewReview(reviewId) {
-            // Load review details via AJAX
-            fetch(`/Admin/GetReviewDetails/${reviewId}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('reviewDetails').innerHTML = `
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>User Information</h6>
-                                <p><strong>Name:</strong> ${data.userName}</p>
-                                <p><strong>Email:</strong> ${data.userEmail}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Hotel Information</h6>
-                                <p><strong>Hotel:</strong> ${data.hotelName}</p>
-                                <p><strong>City:</strong> ${data.hotelCity}</p>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Rating</h6>
-                                <div class="d-flex align-items-center">
-                                    ${generateStars(data.rating)}
-                                    <span class="ms-2 badge bg-primary">${data.rating}/5</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Review Date</h6>
-                                <p>${new Date(data.reviewDate).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-12">
-                                <h6>Comment</h6>
-                                <p>${data.comment || 'No comment provided'}</p>
-                            </div>
-                        </div>
-                    `;
-                    new bootstrap.Modal(document.getElementById('viewReviewModal')).show();
-                })
-                .catch(error => {
-                    console.error('Error loading review details:', error);
-                    alert('Error loading review details');
-                });
-        }
-
-        function generateStars(rating) {
-            let stars = '';
-            for (let i = 1; i <= 5; i++) {
-                if (i <= rating) {
-                    stars += '<i class="fas fa-star text-warning"></i>';
-                } else {
-                    stars += '<i class="far fa-star text-warning"></i>';
-                }
-            }
-            return stars;
-        }
-
-        function filterByRating(rating) {
-            const rows = document.querySelectorAll('#reviewsTable tbody tr');
-            rows.forEach(row => {
-                if (rating === 'all' || row.dataset.rating === rating) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+<script>
+    function deleteReview(id) {
+        if (confirm('Are you sure you want to delete this review?')) {
+            $.post('/Admin/DeleteReview/' + id, function () {
+                location.reload();
             });
         }
-
-        function exportTable() {
-            const table = document.getElementById('reviewsTable');
-            const html = table.outerHTML;
-            const url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
-            const downloadLink = document.createElement("a");
-            document.body.appendChild(downloadLink);
-            downloadLink.href = url;
-            downloadLink.download = 'reviews.xls';
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-        }
-
-        $(document).ready(function() {
-            if ($.fn.DataTable) {
-                $('#reviewsTable').DataTable({
-                    "order": [[0, "desc"]],
-                    "pageLength": 25
-                });
-            }
-        });
-    </script>
-}
+    }
+</script>

@@ -1,44 +1,45 @@
 @model HotelReservationApp.Models.LoginViewModel
-
 @{
-    ViewData["Title"] = "Giriş Yap";
+    ViewData["Title"] = "Login";
     Layout = "_Layout";
 }
 
 <div class="container-xxl py-5">
     <div class="container">
-        <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
-            <h6 class="section-title text-center text-primary text-uppercase">Giriş Yap</h6>
-            <h1 class="mb-5">Hesabınıza <span class="text-primary text-uppercase">Giriş Yapın</span></h1>
+        <div class="text-center">
+            <h6 class="section-title text-center text-primary text-uppercase">Login</h6>
+            <h1 class="mb-5">Sign in to your <span class="text-primary text-uppercase">account</span></h1>
         </div>
         <div class="row g-5 justify-content-center">
             <div class="col-md-6">
-                <div class="wow fadeInUp" data-wow-delay="0.2s">
-                    <div class="card shadow">
-                        <div class="card-body p-4">
-                            @if (ViewBag.Error != null)
-                            {
-                                <div class="alert alert-danger mb-3">@ViewBag.Error</div>
-                            }
-                            
-                            <form method="post" action="/Account/Login">
-                                @Html.AntiForgeryToken()
-                                
-                                <div class="mb-3">
-                                    <label for="Username" class="form-label">E-posta</label>
-                                    <input type="email" id="Username" name="Username" class="form-control" required placeholder="E-posta adresinizi girin" />
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label for="Password" class="form-label">Şifre</label>
-                                    <input type="password" id="Password" name="Password" class="form-control" required placeholder="Şifrenizi girin" />
-                                </div>
-                                
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary py-3">GİRİŞ YAP</button>
-                                </div>
-                            </form>
-                        </div>
+                <div class="card shadow">
+                    <div class="card-body p-4">
+                        @if (ViewBag.Error != null)
+                        {
+                            <div class="alert alert-danger mb-3">@ViewBag.Error</div>
+                        }
+
+                        <form method="post" action="/Account/Login">
+                            <input name="__RequestVerificationToken" type="hidden"
+                                   value="@ViewBag.RequestVerificationToken" />
+
+                            <div class="mb-3">
+                                <label for="Username" class="form-label">Email</label>
+                                <input type="email" id="Username" name="Username" class="form-control" required
+                                       placeholder="Enter your email address" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="Password" class="form-label">Password</label>
+                                <input type="password" id="Password" name="Password" class="form-control" required
+                                       placeholder="Enter your password" />
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary py-3">SIGN IN</button>
+                            </div>
+                        </form>
+
                     </div>
                 </div>
             </div>

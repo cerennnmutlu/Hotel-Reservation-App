@@ -34,13 +34,7 @@
                             <button class="btn btn-sm btn-warning" onclick="showRoomDetails(@room.RoomID)">View Detail</button>
                             <button class="btn btn-sm btn-dark" onclick="bookRoom(@room.RoomID)">Book Now</button>
                         </div>
-                        @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
-                        {
-                            <div class="d-flex justify-content-between mt-2">
-                                <a class="btn btn-sm btn-secondary" href="/Room/Edit/@room.RoomID">Edit</a>
-                                <a class="btn btn-sm btn-danger" href="/Room/Delete/@room.RoomID">Delete</a>
-                            </div>
-                        }
+                        
                     </div>
                 </div>
             </div>

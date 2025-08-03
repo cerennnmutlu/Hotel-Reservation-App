@@ -1,0 +1,135 @@
+@model HotelReservationApp.Models.Room
+
+<div class="modal fade" id="roomDetailsModal" tabindex="-1" aria-labelledby="roomDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="roomDetailsModalLabel">Room Details - @Model.RoomNumber</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        @if (Model.RoomImages != null && Model.RoomImages.Any())
+                        {
+                            <!-- Image Carousel -->
+                            <div id="roomImageCarousel" class="carousel slide" data-bs-ride="carousel">
+                                <div class="carousel-inner">
+                                    @{
+                                        var isFirst = true;
+                                    }
+                                    @foreach (var image in Model.RoomImages)
+                                    {
+                                        <div class="carousel-item @(isFirst ? "active" : "")">
+                                            <img src="@image.ImageUrl" alt="Room Image"
+                                                class="d-block w-100 rounded" style="height: 300px; object-fit: cover;" />
+                                        </div>
+                                        isFirst = false;
+                                    }
+                                </div>
+                                @if (Model.RoomImages.Count() > 1)
+                                {
+                                    <button class="carousel-control-prev" type="button" data-bs-target="#roomImageCarousel" data-bs-slide="prev">
+                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Previous</span>
+                                    </button>
+                                    <button class="carousel-control-next" type="button" data-bs-target="#roomImageCarousel" data-bs-slide="next">
+                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Next</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center p-5 bg-light rounded">
+                                <i class="fas fa-image fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No images available</p>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Room Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless">
+                                    <tbody>
+                                        <tr>
+                                            <th scope="row">Room ID:</th>
+                                            <td>@Model.RoomID</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Room Number:</th>
+                                            <td>@Model.RoomNumber</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Room Type:</th>
+                                            <td>@Model.RoomType?.TypeName</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Price per Night:</th>
+                                            <td>$@Model.PricePerNight</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Capacity:</th>
+                                            <td>@Model.Capacity persons</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Status:</th>
+                                            <td>
+                                                <span class="badge @(Model.IsAvailable ? "bg-success" : "bg-danger")">
+                                                    @(Model.IsAvailable ? "Available" : "Occupied")
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Hotel:</th>
+                                            <td>@Model.Hotel?.Name</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">Room Images</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    @if (Model.RoomImages != null && Model.RoomImages.Any())
+                                    {
+                                        foreach (var image in Model.RoomImages)
+                                        {
+                                            <div class="col-md-3 col-sm-4 col-6">
+                                                <div class="position-relative">
+                                                    <img src="@image.ImageUrl" alt="Room Image" class="img-thumbnail" style="height: 150px; width: 100%; object-fit: cover;" />
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="col-12 text-center p-5">
+                                            <p class="text-muted">No images available for this room</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" onclick="editRoom(@Model.RoomID)">Edit Room</button>
+            </div>
+        </div>
+    </div>
+</div>

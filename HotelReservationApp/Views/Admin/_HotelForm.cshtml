@@ -1,0 +1,79 @@
+@model HotelReservationApp.Models.Hotel
+<div class="modal" id="hotelModal" style="display:block; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    @(Model.HotelID == 0 ? "Add New Hotel" : "Edit Hotel")
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="@(Model.HotelID == 0 ? "/Admin/AddHotel" : "/Admin/EditHotel")">
+                <div class="modal-body">
+                    <input type="hidden" name="HotelID" value="@Model.HotelID" />
+                    <input type="hidden" name="CreatedDate" value="@(Model.CreatedDate == default(DateTime) ? DateTime.Now : Model.CreatedDate)" />
+                    <div class="mb-3">
+                        <label>Hotel Owner</label>
+                        <select name="OwnerID" class="form-control" required>
+                            <option value="">Select an owner</option>
+                            @foreach (var manager in ViewBag.HotelManagers)
+                            {
+                                <option value="@manager.UserID" selected="@(Model.OwnerID == manager.UserID)">@manager.FullName (@manager.Email)</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Hotel Name</label>
+                        <input name="Name" class="form-control" value="@Model.Name" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>City</label>
+                        <select name="CityID" class="form-control" required>
+                            <option value="">Select a city</option>
+                            @foreach (var city in ViewBag.Cities)
+                            {
+                                <option value="@city.CityID" selected="@(Model.CityID == city.CityID)">@city.CityName</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Phone</label>
+                        <input name="Phone" class="form-control" value="@Model.Phone" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Address</label>
+                        <textarea name="Address" class="form-control" rows="2">@Model.Address</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" name="Email" class="form-control" value="@Model.Email" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Website</label>
+                        <input name="Website" class="form-control" value="@Model.Website" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Description</label>
+                        <textarea name="Description" class="form-control" rows="3">@Model.Description</textarea>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isActive" name="IsActive" @(Model.IsActive ? "checked" : "") />
+                        <label class="form-check-label" for="isActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

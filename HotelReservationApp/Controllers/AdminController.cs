@@ -1,13 +1,16 @@
 using HotelReservationApp.Data;
 using HotelReservationApp.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace HotelReservationApp.Controllers
 {
-    [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly HotelReservationContext _context;
@@ -17,425 +20,564 @@ namespace HotelReservationApp.Controllers
             _context = context;
         }
 
-        // Admin paneli ana sayfası
         public async Task<IActionResult> Index()
         {
-            var totalUsers = await _context.Users.CountAsync();
-            var totalHotels = await _context.Hotels.CountAsync();
-            var totalReservations = await _context.Reservations.CountAsync();
-            var totalReviews = await _context.Reviews.CountAsync();
-
-            ViewBag.TotalUsers = totalUsers;
-            ViewBag.TotalHotels = totalHotels;
-            ViewBag.TotalReservations = totalReservations;
-            ViewBag.TotalReviews = totalReviews;
-
+            ViewBag.UserCount = await _context.Users.CountAsync();
+            ViewBag.HotelCount = await _context.Hotels.CountAsync();
+            ViewBag.ReservationCount = await _context.Reservations.CountAsync();
+            ViewBag.ReviewCount = await _context.Reviews.CountAsync();
             return View();
         }
 
-        // Kullanıcıları listeleme
-        public async Task<IActionResult> Users()
-        {
-            var users = await _context.Users
-                .Include(u => u.Role)
-                .OrderByDescending(u => u.CreatedDate)
-                .ToListAsync();
-            return View(users);
-        }
+        // USERS
+        public async Task<IActionResult> Users() => View(await _context.Users.Include(u => u.Role).ToListAsync());
 
-        // Müşterileri listeleme
-        public async Task<IActionResult> Customers()
-        {
-            var customers = await _context.Users
-                .Include(u => u.Role)
-                .Where(u => u.Role.RoleName == "Customer")
-                .OrderByDescending(u => u.CreatedDate)
-                .ToListAsync();
-            return View(customers);
-        }
+        public IActionResult AddUserForm() => PartialView("_UserForm", new User());
 
-        // Hotel Manager'ları listeleme
-        public async Task<IActionResult> HotelManagers()
-        {
-            var managers = await _context.Users
-                .Include(u => u.Role)
-                .Where(u => u.Role.RoleName == "Hotel Manager")
-                .OrderByDescending(u => u.CreatedDate)
-                .ToListAsync();
-            return View(managers);
-        }
+        public async Task<IActionResult> EditUserForm(int id) =>
+            PartialView("_UserForm", await _context.Users.FindAsync(id));
 
-        // Admin'leri listeleme
-        public async Task<IActionResult> Admins()
-        {
-            var admins = await _context.Users
-                .Include(u => u.Role)
-                .Where(u => u.Role.RoleName == "Admin")
-                .OrderByDescending(u => u.CreatedDate)
-                .ToListAsync();
-            return View(admins);
-        }
-
-        // Kullanıcı detaylarını görüntüleme
-        public async Task<IActionResult> UserDetails(int id)
-        {
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .Include(u => u.Reservations)
-                .ThenInclude(r => r.Room)
-                .ThenInclude(r => r.Hotel)
-                .Include(u => u.Reviews)
-                .ThenInclude(r => r.Hotel)
-                .FirstOrDefaultAsync(u => u.UserID == id);
-
-            if (user == null)
-                return Json(new { success = false, message = "User not found." });
-
-            return PartialView("_UserDetails", user);
-        }
-
-        // Kullanıcı oluşturma sayfası
-        public async Task<IActionResult> CreateUser()
-        {
-            ViewBag.Roles = await _context.Roles.ToListAsync();
-            return View();
-        }
-
-        // Kullanıcı oluşturma
         [HttpPost]
-        public async Task<IActionResult> CreateUser(User user)
+        public async Task<IActionResult> AddUser(User user)
         {
-            if (ModelState.IsValid)
-            {
-                // Email kontrolü
-                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
-                if (existingUser != null)
-                {
-                    return Json(new { success = false, message = "This email is already registered." });
-                }
-
-                user.CreatedDate = DateTime.Now;
-                // Şifre doğrudan PasswordHash alanına kaydediliyor
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "User created successfully!" });
-            }
-
-            return Json(new { success = false, message = "Failed to create user. Please check the form." });
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Users");
         }
 
-        // Kullanıcı düzenleme sayfası
-        public async Task<IActionResult> EditUser(int id)
-        {
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.UserID == id);
-
-            if (user == null)
-                return NotFound();
-
-            ViewBag.Roles = await _context.Roles.ToListAsync();
-            return View(user);
-        }
-
-        // Kullanıcı düzenleme
         [HttpPost]
         public async Task<IActionResult> EditUser(User user)
         {
-            if (ModelState.IsValid)
-            {
-                var existingUser = await _context.Users.FindAsync(user.UserID);
-                if (existingUser == null)
-                    return Json(new { success = false, message = "User not found." });
-
-                // Email kontrolü (kendi email'i hariç)
-                var emailExists = await _context.Users
-                    .AnyAsync(u => u.Email == user.Email && u.UserID != user.UserID);
-                if (emailExists)
-                {
-                    return Json(new { success = false, message = "This email is already registered." });
-                }
-
-                existingUser.FullName = user.FullName;
-                existingUser.Email = user.Email;
-                existingUser.Phone = user.Phone;
-                existingUser.RoleID = user.RoleID;
-                existingUser.IsActive = user.IsActive;
-
-                // Şifre değiştirilmişse güncelle
-                if (!string.IsNullOrEmpty(user.PasswordHash))
-                {
-                    existingUser.PasswordHash = user.PasswordHash;
-                }
-
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, message = "User updated successfully!" });
-            }
-
-            return Json(new { success = false, message = "Failed to update user. Please check the form." });
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Users");
         }
 
-        // Kullanıcı silme
         [HttpPost]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = await _context.Users
-                .Include(u => u.Reservations)
-                .Include(u => u.Reviews)
-                .FirstOrDefaultAsync(u => u.UserID == id);
-
-            if (user == null)
-                return Json(new { success = false, message = "User not found." });
-
-            // Kullanıcının rezervasyonları veya yorumları varsa silme
-            if (user.Reservations.Any() || user.Reviews.Any())
-            {
-                return Json(new { success = false, message = "Cannot delete user with existing reservations or reviews." });
-            }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "User deleted successfully!" });
-        }
-
-        // Kullanıcı durumunu değiştirme (aktif/pasif)
-        [HttpPost]
-        public async Task<IActionResult> ToggleUserStatus(int id)
-        {
             var user = await _context.Users.FindAsync(id);
-            if (user == null)
-                return Json(new { success = false, message = "User not found." });
-
-            user.IsActive = !user.IsActive;
-            await _context.SaveChangesAsync();
-
-            var status = user.IsActive ? "activated" : "deactivated";
-            return Json(new { success = true, message = $"User {status} successfully!" });
-        }
-
-        // Otelleri listeleme
-        public async Task<IActionResult> Hotels()
-        {
-            var hotels = await _context.Hotels
-                .Include(h => h.Rooms)
-                .ToListAsync();
-            return View(hotels);
-        }
-
-        // Yorumları listeleme
-        public async Task<IActionResult> Reviews()
-        {
-            var reviews = await _context.Reviews
-                .Include(r => r.User)
-                .Include(r => r.Hotel)
-                .OrderByDescending(r => r.ReviewDate)
-                .ToListAsync();
-            return View(reviews);
-        }
-
-        // Rezervasyonları listeleme
-        public async Task<IActionResult> Reservations()
-        {
-            var reservations = await _context.Reservations
-                .Include(r => r.User)
-                .Include(r => r.Room)
-                .ThenInclude(r => r.Hotel)
-                .OrderByDescending(r => r.CreatedDate)
-                .ToListAsync();
-            return View(reservations);
-        }
-
-        // Otel oluşturma
-        [HttpPost]
-        public async Task<IActionResult> CreateHotel(Hotel hotel)
-        {
-            if (ModelState.IsValid)
+            if (user != null)
             {
-                _context.Hotels.Add(hotel);
+                _context.Users.Remove(user);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Hotel created successfully!";
-                return RedirectToAction(nameof(Hotels));
             }
-
-            TempData["ErrorMessage"] = "Failed to create hotel. Please check the form.";
-            return RedirectToAction(nameof(Hotels));
+            return Ok();
         }
 
-        // Otel silme
-        [HttpPost]
-        public async Task<IActionResult> DeleteHotel(int id)
+        // HOTELS
+        public async Task<IActionResult> Hotels() => View(await _context.Hotels.Include(h => h.City).ToListAsync());
+        
+        // HOTEL ROOMS
+        public async Task<IActionResult> HotelRooms(int id)
         {
             var hotel = await _context.Hotels.FindAsync(id);
             if (hotel == null)
+            {
+                return NotFound();
+            }
+            
+            ViewBag.HotelName = hotel.Name;
+            ViewBag.HotelID = hotel.HotelID;
+            
+            var rooms = await _context.Rooms
+                .Where(r => r.HotelID == id)
+                .Include(r => r.RoomType)
+                .ToListAsync();
+                
+            return View(rooms);
+        }
+        
+        [Route("Admin/AddRoomForm/{hotelId}")]
+        public async Task<IActionResult> AddRoomForm(int hotelId)
+        {
+            var hotel = await _context.Hotels.FindAsync(hotelId);
+            if (hotel == null)
+            {
+                return NotFound();
+            }
+            
+            ViewBag.HotelName = hotel.Name;
+            ViewBag.RoomTypes = await _context.RoomTypes.ToListAsync();
+            
+            var room = new Room { HotelID = hotelId };
+            return PartialView("_RoomForm", room);
+        }
+        
+        [Route("Admin/EditRoomForm/{id}")]
+        public async Task<IActionResult> EditRoomForm(int id)
+        {
+            var room = await _context.Rooms.FindAsync(id);
+            if (room == null)
+            {
+                return NotFound();
+            }
+            
+            var hotel = await _context.Hotels.FindAsync(room.HotelID);
+            ViewBag.HotelName = hotel?.Name;
+            ViewBag.RoomTypes = await _context.RoomTypes.ToListAsync();
+            
+            return PartialView("_RoomForm", room);
+        }
+        
+        [HttpPost]
+        public async Task<IActionResult> AddRoom([FromForm] Room room, List<IFormFile> roomImages)
+        {
+            try
+            {
+                Console.WriteLine($"Received room data: HotelID={room.HotelID}, RoomTypeID={room.RoomTypeID}, RoomNumber={room.RoomNumber}, PricePerNight={room.PricePerNight}, Capacity={room.Capacity}");
+                
+                // Validate required fields
+                var validationErrors = new List<string>();
+                
+                if (room.HotelID <= 0)
+                {
+                    validationErrors.Add("Invalid Hotel ID");
+                }
+                
+                if (room.RoomTypeID <= 0)
+                {
+                    validationErrors.Add("Please select a valid room type");
+                }
+                
+                if (string.IsNullOrWhiteSpace(room.RoomNumber))
+                {
+                    validationErrors.Add("Room number is required");
+                }
+                
+                if (room.PricePerNight <= 0)
+                {
+                    validationErrors.Add("Price per night must be greater than zero");
+                }
+                
+                if (room.Capacity <= 0)
+                {
+                    validationErrors.Add("Capacity must be greater than zero");
+                }
+                
+                if (validationErrors.Any())
+                {
+                    Console.WriteLine($"Validation failed: {string.Join(", ", validationErrors)}");
+                    return BadRequest(new { success = false, message = string.Join(", ", validationErrors) });
+                }
+                
+                // Check if hotel exists
+                var hotel = await _context.Hotels.FindAsync(room.HotelID);
+                if (hotel == null)
+                {
+                    Console.WriteLine($"Hotel with ID {room.HotelID} not found");
+                    return NotFound(new { success = false, message = $"Hotel with ID {room.HotelID} not found" });
+                }
+                
+                // Check if room type exists
+                var roomType = await _context.RoomTypes.FindAsync(room.RoomTypeID);
+                if (roomType == null)
+                {
+                    Console.WriteLine($"Room type with ID {room.RoomTypeID} not found");
+                    return NotFound(new { success = false, message = $"Room type with ID {room.RoomTypeID} not found" });
+                }
+                
+                // Check if room number already exists for this hotel
+                var existingRoom = await _context.Rooms
+                    .Where(r => r.HotelID == room.HotelID && r.RoomNumber == room.RoomNumber)
+                    .FirstOrDefaultAsync();
+                    
+                if (existingRoom != null)
+                {
+                    Console.WriteLine($"Room with number {room.RoomNumber} already exists in hotel {room.HotelID}");
+                    return StatusCode(409, new { success = false, error = $"Room with number {room.RoomNumber} already exists in this hotel" });
+                }
+                
+                _context.Rooms.Add(room);
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Room added successfully with ID: {room.RoomID}");
+                
+                // Handle image uploads
+                if (roomImages != null && roomImages.Count > 0)
+                {
+                    Console.WriteLine($"Processing {roomImages.Count} room images");
+                    
+                    // Create directory if it doesn't exist
+                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "rooms", room.RoomID.ToString());
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+                    
+                    foreach (var image in roomImages)
+                    {
+                        if (image.Length > 0)
+                        {
+                            // Generate a unique filename
+                            string fileName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+                            string filePath = Path.Combine(uploadsFolder, fileName);
+                            
+                            // Save the file
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await image.CopyToAsync(stream);
+                            }
+                            
+                            // Save image info to database
+                            var roomImage = new RoomImage
+                            {
+                                RoomID = room.RoomID,
+                                ImageUrl = $"/img/rooms/{room.RoomID}/{fileName}"
+                            };
+                            
+                            _context.RoomImages.Add(roomImage);
+                            Console.WriteLine($"Added image: {roomImage.ImageUrl}");
+                        }
+                    }
+                    
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine("Room images saved successfully");
+                }
+                
+                return Ok(new { success = true, redirectUrl = Url.Action("HotelRooms", new { id = room.HotelID }) });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in AddRoom: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return BadRequest(new { success = false, error = "An error occurred while adding the room. Please try again." });
+            }
+        }
+        
+        [HttpPost]
+        public async Task<IActionResult> EditRoom([FromForm] Room room, List<IFormFile> roomImages)
+        {
+            try
+            {
+                Console.WriteLine($"Received edit room data: RoomID={room.RoomID}, HotelID={room.HotelID}, RoomTypeID={room.RoomTypeID}, RoomNumber={room.RoomNumber}, PricePerNight={room.PricePerNight}, Capacity={room.Capacity}");
+                
+                // Validate required fields
+                var validationErrors = new List<string>();
+                
+                if (room.RoomID <= 0)
+                {
+                    validationErrors.Add("Invalid Room ID");
+                }
+                
+                if (room.HotelID <= 0)
+                {
+                    validationErrors.Add("Invalid Hotel ID");
+                }
+                
+                if (room.RoomTypeID <= 0)
+                {
+                    validationErrors.Add("Please select a valid room type");
+                }
+                
+                if (string.IsNullOrWhiteSpace(room.RoomNumber))
+                {
+                    validationErrors.Add("Room number is required");
+                }
+                
+                if (room.PricePerNight <= 0)
+                {
+                    validationErrors.Add("Price per night must be greater than zero");
+                }
+                
+                if (room.Capacity <= 0)
+                {
+                    validationErrors.Add("Capacity must be greater than zero");
+                }
+                
+                if (validationErrors.Any())
+                {
+                    Console.WriteLine($"Validation failed: {string.Join(", ", validationErrors)}");
+                    return BadRequest(new { success = false, message = string.Join(", ", validationErrors) });
+                }
+                
+                // Check if room exists
+                var existingRoom = await _context.Rooms.FindAsync(room.RoomID);
+                if (existingRoom == null)
+                {
+                    Console.WriteLine($"Room with ID {room.RoomID} not found");
+                    return NotFound(new { success = false, message = $"Room with ID {room.RoomID} not found" });
+                }
+                
+                // Check if room number already exists for this hotel (excluding the current room)
+                var duplicateRoom = await _context.Rooms
+                    .Where(r => r.HotelID == room.HotelID && r.RoomNumber == room.RoomNumber && r.RoomID != room.RoomID)
+                    .FirstOrDefaultAsync();
+                    
+                if (duplicateRoom != null)
+                {
+                    Console.WriteLine($"Another room with number {room.RoomNumber} already exists in hotel {room.HotelID}");
+                    return StatusCode(409, new { success = false, error = $"Another room with number {room.RoomNumber} already exists in this hotel" });
+                }
+                
+                // Update room properties
+                existingRoom.RoomTypeID = room.RoomTypeID;
+                existingRoom.RoomNumber = room.RoomNumber;
+                existingRoom.PricePerNight = room.PricePerNight;
+                existingRoom.Capacity = room.Capacity;
+                existingRoom.IsAvailable = room.IsAvailable;
+                
+                await _context.SaveChangesAsync();
+                Console.WriteLine($"Room updated successfully: {room.RoomID}");
+                
+                // Handle image uploads
+                if (roomImages != null && roomImages.Count > 0)
+                {
+                    Console.WriteLine($"Processing {roomImages.Count} room images for edit");
+                    
+                    // Create directory if it doesn't exist
+                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "img", "rooms", room.RoomID.ToString());
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+                    
+                    foreach (var image in roomImages)
+                    {
+                        if (image.Length > 0)
+                        {
+                            // Generate a unique filename
+                            string fileName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+                            string filePath = Path.Combine(uploadsFolder, fileName);
+                            
+                            // Save the file
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await image.CopyToAsync(stream);
+                            }
+                            
+                            // Save image info to database
+                            var roomImage = new RoomImage
+                            {
+                                RoomID = room.RoomID,
+                                ImageUrl = $"/img/rooms/{room.RoomID}/{fileName}"
+                            };
+                            
+                            _context.RoomImages.Add(roomImage);
+                            Console.WriteLine($"Added image: {roomImage.ImageUrl}");
+                        }
+                    }
+                    
+                    await _context.SaveChangesAsync();
+                    Console.WriteLine("Room images saved successfully");
+                }
+                
+                return Ok(new { success = true, redirectUrl = Url.Action("HotelRooms", new { id = room.HotelID }) });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in EditRoom: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return BadRequest(new { success = false, error = "An error occurred while updating the room. Please try again." });
+            }
+        }
+        
+        [HttpPost]
+        public async Task<IActionResult> DeleteRoom(int id)
+        {
+            var room = await _context.Rooms.FindAsync(id);
+            if (room == null)
+            {
+                return NotFound();
+            }
+            
+            int hotelId = room.HotelID;
+            
+            _context.Rooms.Remove(room);
+            await _context.SaveChangesAsync();
+            
+            return Ok(new { redirectUrl = Url.Action("HotelRooms", new { id = hotelId }) });
+        }
+        
+        [Route("Admin/RoomDetails/{id}")]
+        public async Task<IActionResult> RoomDetails(int id)
+        {
+            var room = await _context
+                .Rooms.Include(r => r.Hotel)
+                .ThenInclude(h => h.HotelAmenityMappings)
+                .ThenInclude(m => m.Amenity)
+                .Include(r => r.RoomType)
+                .Include(r => r.RoomImages)
+                .FirstOrDefaultAsync(r => r.RoomID == id);
+
+            if (room == null)
                 return NotFound();
 
-            _context.Hotels.Remove(hotel);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Hotel deleted successfully!";
-            return RedirectToAction(nameof(Hotels));
+            var availabilityList = await _context
+                .RoomAvailabilities.Where(ra => ra.RoomID == id)
+                .OrderBy(ra => ra.Date)
+                .ToListAsync();
+
+            ViewBag.AvailabilityList = availabilityList;
+
+            return PartialView("_RoomDetailsModal", room);
         }
 
-        // Otel düzenleme
-        public async Task<IActionResult> EditHotel(int id)
+        public async Task<IActionResult> AddHotelForm()
+        {
+            ViewBag.Cities = await _context.Cities.ToListAsync();
+            // Get hotel managers (users with RoleID = 2)
+            ViewBag.HotelManagers = await _context.Users
+                .Where(u => u.RoleID == 2)
+                .ToListAsync();
+            return PartialView("_HotelForm", new Hotel());
+        }
+
+        public async Task<IActionResult> EditHotelForm(int id)
+        {
+            ViewBag.Cities = await _context.Cities.ToListAsync();
+            // Get hotel managers (users with RoleID = 2)
+            ViewBag.HotelManagers = await _context.Users
+                .Where(u => u.RoleID == 2)
+                .ToListAsync();
+            return PartialView("_HotelForm", await _context.Hotels.FindAsync(id));
+        }
+
+        public async Task<IActionResult> ViewHotelDetails(int id)
         {
             var hotel = await _context.Hotels
                 .Include(h => h.City)
                 .FirstOrDefaultAsync(h => h.HotelID == id);
-            
+                
             if (hotel == null)
+            {
                 return NotFound();
+            }
+            
+            return PartialView("_HotelDetails", hotel);
+        }
 
-            ViewBag.Cities = await _context.Cities.ToListAsync();
-            return View(hotel);
+        [HttpPost]
+        public async Task<IActionResult> AddHotel(Hotel hotel)
+        {
+            if (hotel.CreatedDate == default(DateTime))
+            {
+                hotel.CreatedDate = DateTime.Now;
+            }
+            
+            if (hotel.IsActive == false && hotel.HotelID == 0)
+            {
+                hotel.IsActive = true; // Default to active for new hotels
+            }
+            
+            // Owner is now selected from the form
+            if (hotel.OwnerID == 0)
+            {
+                TempData["ErrorMessage"] = "Lütfen bir otel sahibi seçin";
+                return RedirectToAction("Hotels");
+            }
+            
+            try
+            {
+                _context.Hotels.Add(hotel);
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Hotels");
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                Console.WriteLine(ex.Message);
+                
+                // Redirect with error message
+                TempData["ErrorMessage"] = "Hotel eklenirken bir hata oluştu: " + ex.Message;
+                return RedirectToAction("Hotels");
+            }
         }
 
         [HttpPost]
         public async Task<IActionResult> EditHotel(Hotel hotel)
         {
-            if (ModelState.IsValid)
+            var existingHotel = await _context.Hotels.AsNoTracking().FirstOrDefaultAsync(h => h.HotelID == hotel.HotelID);
+            if (existingHotel != null)
             {
-                _context.Update(hotel);
-                await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = "Hotel updated successfully!";
-                return RedirectToAction(nameof(Hotels));
+                if (hotel.CreatedDate == default(DateTime))
+                {
+                    hotel.CreatedDate = existingHotel.CreatedDate;
+                }
+                
+                // Preserve the OwnerID from the existing hotel
+                hotel.OwnerID = existingHotel.OwnerID;
             }
-
-            ViewBag.Cities = await _context.Cities.ToListAsync();
-            return View(hotel);
-        }
-
-        // Otel odalarını listeleme
-        public async Task<IActionResult> HotelRooms(int id)
-        {
-            var hotel = await _context.Hotels
-                .Include(h => h.Rooms)
-                .ThenInclude(r => r.RoomType)
-                .FirstOrDefaultAsync(h => h.HotelID == id);
             
-            if (hotel == null)
-                return NotFound();
-
-            ViewBag.HotelName = hotel.Name;
-            return View(hotel.Rooms);
+            try
+            {
+                _context.Hotels.Update(hotel);
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Hotels");
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                Console.WriteLine(ex.Message);
+                
+                // Redirect with error message
+                TempData["ErrorMessage"] = "Hotel güncellenirken bir hata oluştu: " + ex.Message;
+                return RedirectToAction("Hotels");
+            }
         }
 
-        // Rezervasyon durumu güncelleme
         [HttpPost]
-        public async Task<IActionResult> UpdateReservationStatus(int id, string status)
+        public async Task<IActionResult> DeleteHotel(int id)
+        {
+            var hotel = await _context.Hotels.FindAsync(id);
+            if (hotel != null)
+            {
+                _context.Hotels.Remove(hotel);
+                await _context.SaveChangesAsync();
+            }
+            return Ok();
+        }
+
+        // RESERVATIONS
+        public async Task<IActionResult> Reservations()
+        {
+            var reservations = await _context.Reservations
+                .Include(r => r.User)
+                .Include(r => r.Room)
+                    .ThenInclude(room => room.Hotel)
+                .ToListAsync();
+
+            return View(reservations);
+        }
+        
+        [HttpPost]
+        public async Task<IActionResult> CancelReservation(int id)
         {
             var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation == null)
-                return NotFound();
-
-            reservation.Status = status;
-            reservation.UpdatedDate = DateTime.Now;
-            
-            _context.Update(reservation);
-            await _context.SaveChangesAsync();
-            
-            TempData["SuccessMessage"] = "Reservation status updated successfully!";
-            return RedirectToAction(nameof(Reservations));
+            if (reservation != null)
+            {
+                reservation.Status = "Cancelled";
+                reservation.CancellationDate = DateTime.Now;
+                reservation.UpdatedDate = DateTime.Now;
+                
+                // Make the room available again
+                var room = await _context.Rooms.FindAsync(reservation.RoomID);
+                if (room != null)
+                {
+                    room.IsAvailable = true;
+                    _context.Rooms.Update(room);
+                }
+                
+                _context.Reservations.Update(reservation);
+                await _context.SaveChangesAsync();
+            }
+            return Ok();
         }
 
-        // Yorum silme
+
+        // REVIEWS
+        public async Task<IActionResult> Reviews() =>
+            View(await _context.Reviews.Include(r => r.User).Include(r => r.Hotel).ToListAsync());
+
         [HttpPost]
         public async Task<IActionResult> DeleteReview(int id)
         {
             var review = await _context.Reviews.FindAsync(id);
-            if (review == null)
-                return NotFound();
-
-            _context.Reviews.Remove(review);
-            await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Review deleted successfully!";
-            return RedirectToAction(nameof(Reviews));
-        }
-
-        // Yorum detaylarını getir
-        public async Task<IActionResult> GetReviewDetails(int id)
-        {
-            var review = await _context.Reviews
-                .Include(r => r.User)
-                .Include(r => r.Hotel)
-                .ThenInclude(h => h.City)
-                .FirstOrDefaultAsync(r => r.ReviewID == id);
-
-            if (review == null)
-                return NotFound();
-
-            var reviewDetails = new
+            if (review != null)
             {
-                reviewId = review.ReviewID,
-                userName = review.User?.FullName,
-                userEmail = review.User?.Email,
-                hotelName = review.Hotel?.Name,
-                hotelCity = review.Hotel?.City?.CityName,
-                rating = review.Rating,
-                comment = review.Comment,
-                reviewDate = review.ReviewDate?.ToString("MMM dd, yyyy")
-            };
-
-            return Json(reviewDetails);
-        }
-
-
-
-        // Dashboard istatistikleri
-        public async Task<IActionResult> GetDashboardStats()
-        {
-            var stats = new
-            {
-                TotalUsers = await _context.Users.CountAsync(),
-                TotalHotels = await _context.Hotels.CountAsync(),
-                TotalReservations = await _context.Reservations.CountAsync(),
-                TotalReviews = await _context.Reviews.CountAsync(),
-                RecentReservations = await _context.Reservations
-                    .Include(r => r.User)
-                    .Include(r => r.Room)
-                    .ThenInclude(room => room.Hotel)
-                    .OrderByDescending(r => r.CreatedDate)
-                    .Take(5)
-                    .Select(r => new {
-                        r.ReservationID,
-                        r.Status,
-                        r.CreatedDate,
-                        User = new {
-                            r.User.FullName,
-                            r.User.Email
-                        },
-                        Room = new {
-                            r.Room.RoomNumber,
-                            Hotel = new {
-                                r.Room.Hotel.Name
-                            }
-                        }
-                    })
-                    .ToListAsync()
-            };
-
-            return Json(stats);
-        }
-
-        // AJAX için kullanıcı verilerini getir
-        public async Task<IActionResult> GetUsersData()
-        {
-            var users = await _context.Users
-                .Include(u => u.Role)
-                .OrderByDescending(u => u.CreatedDate)
-                .Select(u => new
-                {
-                    userID = u.UserID,
-                    fullName = u.FullName,
-                    email = u.Email,
-                    phone = u.Phone,
-                    roleID = u.RoleID,
-                    roleName = u.Role.RoleName,
-                    isActive = u.IsActive,
-                    createdDate = u.CreatedDate
-                })
-                .ToListAsync();
-
-            return Json(users);
+                _context.Reviews.Remove(review);
+                await _context.SaveChangesAsync();
+            }
+            return Ok();
         }
     }
 }

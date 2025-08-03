@@ -1,0 +1,65 @@
+@model HotelReservationApp.Models.User
+<div class="modal" style="display:block; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">@(Model.UserID == 0 ? "Add User" : "Edit User")</h5>
+                <button type="button" class="btn-close" onclick="$('.modal').remove()"></button>
+            </div>
+            <form method="post" action="@(Model.UserID == 0 ? "/Admin/AddUser" : "/Admin/EditUser")">
+                <div class="modal-body">
+                    <input type="hidden" name="UserID" value="@Model.UserID" />
+                    <div class="mb-3">
+                        <label>Full Name</label>
+                        <input name="FullName" class="form-control" value="@Model.FullName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input name="Email" class="form-control" value="@Model.Email" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <input name="PasswordHash" class="form-control" value="@Model.PasswordHash" required />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Phone</label>
+                        <input name="Phone" class="form-control" value="@Model.Phone" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Date of Birth</label>
+                        <input type="date" name="DateOfBirth" class="form-control" value="@(Model.DateOfBirth?.ToString("yyyy-MM-dd"))" />
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label>Gender</label>
+                        <select name="Gender" class="form-control">
+                            <option value="">Select Gender</option>
+                            <option value="Male" selected="@(Model.Gender == "Male" ? "selected" : null)">Male</option>
+                            <option value="Female" selected="@(Model.Gender == "Female" ? "selected" : null)">Female</option>
+                            <option value="Other" selected="@(Model.Gender == "Other" ? "selected" : null)">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Role</label>
+                        <select name="RoleID" class="form-control">
+                            <option value="1" selected="@(Model.RoleID == 1)">Admin</option>
+                            <option value="2" selected="@(Model.RoleID == 2)">Hotel Manager</option>
+                            <option value="3" selected="@(Model.RoleID == 3)">Customer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isActive" name="IsActive" @(Model.IsActive ? "checked" : "") />
+                        <label class="form-check-label" for="isActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="$('.modal').remove()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

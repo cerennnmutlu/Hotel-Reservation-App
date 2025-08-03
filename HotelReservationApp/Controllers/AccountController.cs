@@ -22,6 +22,11 @@ namespace HotelReservationApp.Controllers
         [HttpGet]
         public IActionResult Login()
         {
+            var tokens = HttpContext.RequestServices
+                .GetService<Microsoft.AspNetCore.Antiforgery.IAntiforgery>()
+                .GetAndStoreTokens(HttpContext);
+
+            ViewBag.RequestVerificationToken = tokens.RequestToken;
             return View();
         }
 
@@ -35,43 +40,39 @@ namespace HotelReservationApp.Controllers
                 ViewBag.Error = "Lütfen tüm alanları doldurunuz.";
                 return View(model);
             }
-            
-            // Veritabanından kullanıcıyı bul
+
             var user = await _context.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == model.Username);
+                .FirstOrDefaultAsync(u => u.Email == model.Username && u.IsActive);
 
-            if (user != null && user.PasswordHash == model.Password) // Gerçek uygulamada hash kontrolü yapılmalı
+            if (user != null && user.PasswordHash == model.Password)
             {
                 var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
-                    new Claim(ClaimTypes.Name, user.FullName),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role.RoleName)
-                };
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+            new Claim(ClaimTypes.Name, user.FullName),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role.RoleName)
+        };
 
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var principal = new ClaimsPrincipal(identity);
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-                // Kullanıcı rolüne göre yönlendirme
-                switch (user.Role.RoleName.ToLower())
+                return user.Role.RoleName.ToLower() switch
                 {
-                    case "admin":
-                        return RedirectToAction("Index", "Admin");
-                    case "hotel manager":
-                        return RedirectToAction("Index", "HotelManager");
-                    case "customer":
-                    default:
-                        return RedirectToAction("Index", "Home");
-                }
+                    "admin" => RedirectToAction("Index", "Admin"),
+                    "hotel manager" => RedirectToAction("Index", "HotelManager"),
+                    "customer" => RedirectToAction("Index", "Home"),
+                    _ => RedirectToAction("Login")
+                };
             }
 
             ViewBag.Error = "Geçersiz kullanıcı adı veya şifre.";
             return View(model);
         }
+
 
         // GET: /Account/Logout
         public async Task<IActionResult> Logout()
@@ -92,7 +93,7 @@ namespace HotelReservationApp.Controllers
             var users = await _context.Users
                 .Include(u => u.Role)
                 .ToListAsync();
-            
+
             return View(users);
         }
     }
