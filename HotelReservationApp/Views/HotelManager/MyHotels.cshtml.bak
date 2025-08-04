@@ -1,0 +1,947 @@
+@model IEnumerable<HotelReservationApp.Models.Hotel>
+@{
+    ViewData["Title"] = "My Hotels";
+    Layout = "~/Views/Shared/_HotelManagerLayout.cshtml";
+}
+
+<!-- Modal Templates -->
+<div id="modalTemplates" style="display: none;">
+    <!-- Hotel Details Modal Template -->
+    <div id="hotelDetailsModalTemplate">
+        <div class="modal-header">
+            <h5 class="modal-title">Hotel Details</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Hotel Name</label>
+                        <input type="text" class="form-control" id="editHotelName" name="Name">
+                        <input type="hidden" id="editHotelId" name="HotelID">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">City</label>
+                        <select class="form-select" id="editCityId" name="CityID"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Address</label>
+                <textarea class="form-control" id="editAddress" name="Address" rows="3"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="editPhone" name="Phone">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" name="Email">
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" id="editDescription" name="Description" rows="3"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="saveHotelChanges">Save Changes</button>
+        </div>
+    </div>
+    
+    <!-- Rooms Modal Template -->
+    <div id="roomsModalTemplate">
+        <div class="modal-header">
+            <h5 class="modal-title">Hotel Rooms</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="roomsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Room #</th>
+                            <th>Type</th>
+                            <th>Price</th>
+                            <th>Capacity</th>
+                            <th>Status</th>
+                            <th>Reservations</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roomsTableBody">
+                        <!-- Rooms will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <a href="#" class="btn btn-primary" id="manageRoomsLink">Manage Rooms</a>
+        </div>
+    </div>
+    
+    <!-- Reservations Modal Template -->
+    <div id="reservationsModalTemplate">
+        <div class="modal-header">
+            <h5 class="modal-title">Hotel Reservations</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="reservationsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Guest</th>
+                            <th>Room</th>
+                            <th>Dates</th>
+                            <th>Status</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservationsTableBody">
+                        <!-- Reservations will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <a href="#" class="btn btn-primary" id="manageReservationsLink">Manage All Reservations</a>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">My Hotels</h1>
+    
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">My Hotels</h6>
+        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addHotelModal">
+            <i class="fas fa-plus me-1"></i>Add New Hotel
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="hotelsTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>City</th>
+                        <th>Address</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Rooms Count</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var hotel in Model)
+                    {
+                        <tr>
+                            <td>@hotel.HotelID</td>
+                            <td>
+                                <strong>@hotel.Name</strong>
+                                @if (hotel.Rooms != null && hotel.Rooms.Any())
+                                {
+                                    <br><small class="text-muted">@hotel.Rooms.Count() rooms</small>
+                                }
+                            </td>
+                            <td>@hotel.City?.CityName</td>
+                            <td>@hotel.Address</td>
+                            <td>@hotel.Phone</td>
+                            <td>@hotel.Email</td>
+                            <td>
+                                <span class="badge bg-info">@(hotel.Rooms?.Count() ?? 0)</span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary editHotelBtn" 
+                                            data-hotel-id="@hotel.HotelID" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-info viewRoomsBtn" 
+                                            data-hotel-id="@hotel.HotelID" title="View Rooms">
+                                        <i class="fas fa-bed"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-success viewReservationsBtn" 
+                                            data-hotel-id="@hotel.HotelID" title="View Reservations">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Hotel Modal -->
+<div class="modal fade" id="addHotelModal" tabindex="-1" aria-labelledby="addHotelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addHotelModalLabel">Add New Hotel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="hotelName" class="form-label">Hotel Name</label>
+                            <input type="text" class="form-control" id="hotelName" name="Name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="cityId" class="form-label">City</label>
+                            <select class="form-select" id="cityId" name="CityID" required>
+                                <option value="">Select City</option>
+                                <!-- Cities will be loaded dynamically -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <textarea class="form-control" id="address" name="Address" rows="3"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" name="Phone">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="Email">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="addHotelBtn">Add Hotel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Hotel Modal -->
+<div class="modal fade" id="editHotelModal" tabindex="-1" aria-labelledby="editHotelModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="editHotelModalContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- View Rooms Modal -->
+<div class="modal fade" id="viewRoomsModal" tabindex="-1" aria-labelledby="viewRoomsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="viewRoomsModalContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- View Reservations Modal -->
+<div class="modal fade" id="viewReservationsModal" tabindex="-1" aria-labelledby="viewReservationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="viewReservationsModalContent">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Global variables
+        let hotelDataTable;
+        let currentHotelId;
+        
+        // Initialize DataTable
+        $(document).ready(function() {
+            if ($.fn.DataTable) {
+                hotelDataTable = $('#hotelsTable').DataTable({
+                    "order": [[0, "desc"]],
+                    "pageLength": 25
+                });
+            }
+            
+            // Load cities for dropdowns
+            loadCities();
+            
+            // Setup event handlers
+            setupEventHandlers();
+        });
+        
+        // Load cities for dropdowns
+        function loadCities() {
+            console.log('Loading cities...');
+            $.ajax({
+                url: '/HotelManager/GetCities',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const cityDropdowns = $('#cityId, #editCityId');
+                        cityDropdowns.empty();
+                        cityDropdowns.append('<option value="">Şehir Seçin</option>');
+                        
+                        // Log cities received from server
+                        console.log('Cities received:', response.cities);
+                        
+                        if (response.cities && response.cities.length > 0) {
+                            $.each(response.cities, function(i, city) {
+                                // Ensure cityID is a number
+                                const cityId = parseInt(city.cityID);
+                                cityDropdowns.append(`<option value="${cityId}">${city.cityName}</option>`);
+                                console.log(`Added city: ID=${cityId}, Name=${city.cityName}`);
+                            });
+                        } else {
+                            console.error('No cities returned from server');
+                            showToast('Şehir listesi boş', 'error');
+                        }
+                        
+                        // Log final dropdown options
+                        console.log('City dropdown options:', $('#cityId option').length);
+                    } else {
+                        console.error('Failed to load cities:', response.message);
+                        showToast('Şehir listesi yüklenemedi', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    showToast('Şehir listesi yüklenemedi', 'error');
+                    console.error('Error loading cities:', status, error);
+                    console.error('Response:', xhr.responseText);
+                }
+            });
+        }
+        
+        // Setup event handlers
+        function setupEventHandlers() {
+            // Add Hotel button
+            $('#addHotelBtn').on('click', function() {
+                addNewHotel();
+            });
+            
+            // Edit Hotel buttons
+            $(document).on('click', '.editHotelBtn', function() {
+                const hotelId = $(this).data('hotel-id');
+                editHotel(hotelId);
+            });
+            
+            // Save Hotel Changes button
+            $(document).on('click', '#saveHotelChanges', function() {
+                saveHotelChanges();
+            });
+            
+            // View Rooms buttons
+            $(document).on('click', '.viewRoomsBtn', function() {
+                const hotelId = $(this).data('hotel-id');
+                viewRooms(hotelId);
+            });
+            
+            // View Reservations buttons
+            $(document).on('click', '.viewReservationsBtn', function() {
+                const hotelId = $(this).data('hotel-id');
+                viewReservations(hotelId);
+            });
+            
+            // View Room Reservations buttons
+            $(document).on('click', '.viewRoomReservationsBtn', function() {
+                const roomId = $(this).data('room-id');
+                viewRoomReservations(roomId);
+            });
+            
+            // Change Reservation Status buttons
+            $(document).on('click', '.changeStatusBtn', function(e) {
+                e.preventDefault();
+                const reservationId = $(this).data('reservation-id');
+                const newStatus = $(this).data('status');
+                updateReservationStatus(reservationId, newStatus);
+            });
+            
+            // Initialize tooltips
+            $(document).on('shown.bs.modal', function() {
+                $('[data-bs-toggle="tooltip"]').tooltip();
+            });
+            
+            // Manage Rooms link
+            $(document).on('click', '#manageRoomsLink', function() {
+                window.location.href = `/HotelManager/MyRooms?hotelId=${currentHotelId}`;
+            });
+            
+            // Manage Reservations link
+            $(document).on('click', '#manageReservationsLink', function() {
+                window.location.href = `/HotelManager/MyReservations?hotelId=${currentHotelId}`;
+            });
+        }
+        
+        // Add New Hotel
+        function addNewHotel() {
+            // Get form values and trim whitespace
+            const hotelName = $('#hotelName').val().trim();
+            const cityIdValue = $('#cityId').val();
+            const address = $('#address').val().trim();
+            const phone = $('#phone').val().trim();
+            const email = $('#email').val().trim();
+            const description = $('#description').val().trim();
+            
+            // Validate required fields with more specific checks
+            if (!hotelName || hotelName.length === 0) {
+                showToast('Lütfen otel adını girin', 'error');
+                return;
+            }
+            
+            if (!cityIdValue || cityIdValue === '') {
+                showToast('Lütfen bir şehir seçin', 'error');
+                return;
+            }
+            
+            const cityId = parseInt(cityIdValue);
+            if (isNaN(cityId) || cityId <= 0) {
+                showToast('Geçersiz şehir seçimi', 'error');
+                return;
+            }
+            
+            // Create hotel data object
+            const hotelData = {
+                Name: hotelName,
+                CityID: cityId,
+                Address: address,
+                Phone: phone,
+                Email: email,
+                Description: description
+            };
+            
+            // Log data being sent for debugging
+            console.log('Sending hotel data:', hotelData);
+            console.log('CityID type:', typeof cityId, 'CityID value:', cityId);
+            
+            // Verify city dropdown has valid options
+            const cityOptions = $('#cityId option').length;
+            console.log('City dropdown options count:', cityOptions);
+            if (cityOptions <= 1) {
+                // Only the default "Select City" option exists
+                showToast('Şehir listesi yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.', 'error');
+                return;
+            }
+            
+            // Disable submit button to prevent multiple submissions
+            $('#addHotelBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Ekleniyor...');
+            
+            $.ajax({
+                url: '/HotelManager/CreateHotel',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(hotelData),
+                success: function(response) {
+                    // Re-enable button
+                    $('#addHotelBtn').prop('disabled', false).html('Oteli Ekle');
+                    
+                    if (response.success) {
+                        // Close modal
+                        $('#addHotelModal').modal('hide');
+                        
+                        // Show success message
+                        showToast(response.message, 'success');
+                        
+                        // Reload page to show new hotel
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        // Show detailed error message
+                        showToast(response.message || 'Otel eklenirken bir hata oluştu', 'error');
+                        console.error('Server error:', response);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // Re-enable button
+                    $('#addHotelBtn').prop('disabled', false).html('Oteli Ekle');
+                    
+                    // Show detailed error message
+                    let errorMessage = 'Otel eklenirken bir hata oluştu';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    
+                    showToast(errorMessage, 'error');
+                    console.error('AJAX error:', status, error);
+                    console.error('Response:', xhr.responseText);
+                }
+            });
+        }
+        
+        // Edit Hotel
+        function editHotel(hotelId) {
+            currentHotelId = hotelId;
+            
+            // Show modal first with loading indicator
+            const modalContent = $('#hotelDetailsModalTemplate').clone();
+            $('#editHotelModalContent').html(modalContent);
+            
+            // Add loading indicator
+            $('#editHotelModalContent .modal-body').html('<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading hotel details...</p></div>');
+            $('#editHotelModal').modal('show');
+            
+            // Load hotel details
+            $.ajax({
+                url: `/HotelManager/GetHotelDetails?id=${hotelId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Clone the template again to replace loading indicator
+                        const modalContent = $('#hotelDetailsModalTemplate').clone();
+                        $('#editHotelModalContent').html(modalContent);
+                        
+                        // Populate form fields
+                        $('#editHotelId').val(response.hotel.hotelID);
+                        $('#editHotelName').val(response.hotel.name);
+                        $('#editCityId').val(response.hotel.cityID);
+                        $('#editAddress').val(response.hotel.address);
+                        $('#editPhone').val(response.hotel.phone);
+                        $('#editEmail').val(response.hotel.email);
+                        $('#editDescription').val(response.hotel.description);
+                    } else {
+                        showToast(response.message, 'error');
+                        $('#editHotelModal').modal('hide');
+                    }
+                },
+                error: function(xhr) {
+                    showToast('Error loading hotel details', 'error');
+                    console.error('Error loading hotel details:', xhr);
+                    $('#editHotelModal').modal('hide');
+                }
+            });
+        }
+        
+        // Save Hotel Changes
+        function saveHotelChanges() {
+            const hotelData = {
+                HotelID: parseInt($('#editHotelId').val()),
+                Name: $('#editHotelName').val(),
+                CityID: parseInt($('#editCityId').val()),
+                Address: $('#editAddress').val(),
+                Phone: $('#editPhone').val(),
+                Email: $('#editEmail').val(),
+                Description: $('#editDescription').val()
+            };
+            
+            // Validate required fields
+            if (!hotelData.Name || !hotelData.CityID) {
+                showToast('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            $.ajax({
+                url: '/HotelManager/EditHotel',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(hotelData),
+                success: function(response) {
+                    // Close modal
+                    $('#editHotelModal').modal('hide');
+                    
+                    // Show success message
+                    showToast('Hotel updated successfully', 'success');
+                    
+                    // Reload page to show updated hotel
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1000);
+                },
+                error: function(xhr) {
+                    showToast('Error updating hotel', 'error');
+                    console.error('Error updating hotel:', xhr);
+                }
+            });
+        }
+        
+        // View Rooms
+        function viewRooms(hotelId) {
+            currentHotelId = hotelId;
+            
+            // Show modal first with loading indicator
+            const modalContent = $('#roomsModalTemplate').clone();
+            $('#viewRoomsModalContent').html(modalContent);
+            $('#roomsTableBody').html('<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+            $('#viewRoomsModal').modal('show');
+            
+            // Load rooms data
+            $.ajax({
+                url: `/HotelManager/GetHotelRooms?hotelId=${hotelId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Populate rooms table
+                        const roomsTableBody = $('#roomsTableBody');
+                        roomsTableBody.empty();
+                        
+                        if (response.rooms.length === 0) {
+                            roomsTableBody.append('<tr><td colspan="6" class="text-center">No rooms found</td></tr>');
+                        } else {
+                            $.each(response.rooms, function(i, room) {
+                                const statusBadge = room.isAvailable ? 
+                                    '<span class="badge bg-success">Available</span>' : 
+                                    '<span class="badge bg-danger">Unavailable</span>';
+                                
+                                roomsTableBody.append(`
+                                    <tr>
+                                        <td>${room.roomNumber}</td>
+                                        <td>${room.roomTypeName}</td>
+                                        <td>$${room.pricePerNight.toFixed(2)}</td>
+                                        <td>${room.capacity}</td>
+                                        <td>${statusBadge}</td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-info viewRoomReservationsBtn" 
+                                                data-room-id="${room.roomID}" title="View Reservations">
+                                                <i class="fas fa-calendar-check"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `);
+                            });
+                        }
+                    } else {
+                        showToast(response.message, 'error');
+                        $('#roomsTableBody').html('<tr><td colspan="6" class="text-center">Error loading rooms</td></tr>');
+                    }
+                },
+                error: function(xhr) {
+                    showToast('Error loading rooms', 'error');
+                    console.error('Error loading rooms:', xhr);
+                    $('#roomsTableBody').html('<tr><td colspan="6" class="text-center">Error loading rooms</td></tr>');
+                }
+            });
+        }
+        
+        // View Reservations
+        function viewReservations(hotelId) {
+            currentHotelId = hotelId;
+            
+            // Show modal first with loading indicator
+            const modalContent = $('#reservationsModalTemplate').clone();
+            $('#viewReservationsModalContent').html(modalContent);
+            $('#reservationsTableBody').html('<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+            $('#viewReservationsModal').modal('show');
+            
+            // Load reservations data
+            $.ajax({
+                url: `/HotelManager/GetHotelReservations?hotelId=${hotelId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Populate reservations table
+                        const reservationsTableBody = $('#reservationsTableBody');
+                        reservationsTableBody.empty();
+                        
+                        if (response.reservations.length === 0) {
+                            reservationsTableBody.append('<tr><td colspan="6" class="text-center">No reservations found</td></tr>');
+                        } else {
+                            $.each(response.reservations, function(i, reservation) {
+                                // Format dates
+                                const checkInDate = new Date(reservation.checkInDate);
+                                const checkOutDate = new Date(reservation.checkOutDate);
+                                const formattedDates = `${checkInDate.toLocaleDateString()} - ${checkOutDate.toLocaleDateString()}`;
+                                
+                                // Status badge
+                                let statusBadge = '';
+                                switch (reservation.status) {
+                                    case 'Confirmed':
+                                        statusBadge = '<span class="badge bg-success">Confirmed</span>';
+                                        break;
+                                    case 'Pending':
+                                        statusBadge = '<span class="badge bg-warning">Pending</span>';
+                                        break;
+                                    case 'Cancelled':
+                                        statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+                                        break;
+                                    case 'Completed':
+                                        statusBadge = '<span class="badge bg-info">Completed</span>';
+                                        break;
+                                    default:
+                                        statusBadge = `<span class="badge bg-secondary">${reservation.status}</span>`;
+                                }
+                                
+                                reservationsTableBody.append(`
+                                    <tr>
+                                        <td>${reservation.reservationID}</td>
+                                        <td>
+                                            <strong>${reservation.guestName}</strong><br>
+                                            <small>${reservation.guestCount} guests</small>
+                                        </td>
+                                        <td>
+                                            <strong>Room ${reservation.roomNumber}</strong>
+                                        </td>
+                                        <td>${formattedDates}</td>
+                                        <td>
+                                            ${statusBadge}
+                                            <div class="dropdown mt-1">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Change
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item changeStatusBtn" href="#" 
+                                                        data-reservation-id="${reservation.reservationID}" 
+                                                        data-status="Confirmed">Confirm</a></li>
+                                                    <li><a class="dropdown-item changeStatusBtn" href="#" 
+                                                        data-reservation-id="${reservation.reservationID}" 
+                                                        data-status="Completed">Complete</a></li>
+                                                    <li><a class="dropdown-item changeStatusBtn" href="#" 
+                                                        data-reservation-id="${reservation.reservationID}" 
+                                                        data-status="Cancelled">Cancel</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong>$${reservation.totalAmount ? reservation.totalAmount.toFixed(2) : '0.00'}</strong>
+                                            ${reservation.specialRequests ? 
+                                                `<button type="button" class="btn btn-sm btn-outline-info viewRequestsBtn" 
+                                                    data-bs-toggle="tooltip" title="${reservation.specialRequests}">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </button>` : ''}
+                                        </td>
+                                    </tr>
+                                `);
+                            });
+                        }
+                        
+                        // Show modal
+                        $('#viewReservationsModal').modal('show');
+                    } else {
+                        showToast(response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    showToast('Error loading reservations', 'error');
+                    console.error('Error loading reservations:', xhr);
+                }
+            });
+        }
+        
+        // View Room Reservations
+        function viewRoomReservations(roomId) {
+            // Show modal first with loading indicator
+            const modalContent = $('#reservationsModalTemplate').clone();
+            $('#viewReservationsModalContent').html(modalContent);
+            
+            // Update modal title
+            $('#viewReservationsModalContent .modal-title').text(`Room Reservations`);
+            
+            // Show loading indicator
+            $('#reservationsTableBody').html('<tr><td colspan="6" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></td></tr>');
+            $('#viewReservationsModal').modal('show');
+            
+            // Load room reservations data
+            $.ajax({
+                url: `/HotelManager/GetRoomReservations?roomId=${roomId}`,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Populate reservations table
+                        const reservationsTableBody = $('#reservationsTableBody');
+                        reservationsTableBody.empty();
+                        
+                        if (response.reservations.length === 0) {
+                            reservationsTableBody.append('<tr><td colspan="6" class="text-center">No reservations found</td></tr>');
+                        } else {
+                            $.each(response.reservations, function(i, reservation) {
+                                // Format dates
+                                const checkInDate = new Date(reservation.checkInDate);
+                                const checkOutDate = new Date(reservation.checkOutDate);
+                                const formattedDates = `${checkInDate.toLocaleDateString()} - ${checkOutDate.toLocaleDateString()}`;
+                                
+                                // Status badge
+                                let statusBadge = '';
+                                switch (reservation.status) {
+                                    case 'Confirmed':
+                                        statusBadge = '<span class="badge bg-success">Confirmed</span>';
+                                        break;
+                                    case 'Pending':
+                                        statusBadge = '<span class="badge bg-warning">Pending</span>';
+                                        break;
+                                    case 'Cancelled':
+                                        statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+                                        break;
+                                    case 'Completed':
+                                        statusBadge = '<span class="badge bg-info">Completed</span>';
+                                        break;
+                                    default:
+                                        statusBadge = `<span class="badge bg-secondary">${reservation.status}</span>`;
+                                }
+                                
+                                reservationsTableBody.append(`
+                                    <tr>
+                                        <td>${reservation.reservationID}</td>
+                                        <td>
+                                            <strong>${reservation.guestName}</strong><br>
+                                            <small>${reservation.guestCount} guests</small>
+                                        </td>
+                                        <td>
+                                            <strong>Room ${reservation.roomNumber}</strong>
+                                        </td>
+                                        <td>${formattedDates}</td>
+                                        <td>
+                                            ${statusBadge}
+                                            <div class="dropdown mt-1">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Change
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item changeStatusBtn" href="#" 
+                                                        data-reservation-id="${reservation.reservationID}" 
+                                                        data-status="Confirmed">Confirm</a></li>
+                                                    <li><a class="dropdown-item changeStatusBtn" href="#" 
+                                                        data-reservation-id="${reservation.reservationID}" 
+                                                        data-status="Completed">Complete</a></li>
+                                                    <li><a class="dropdown-item changeStatusBtn" href="#" 
+                                                        data-reservation-id="${reservation.reservationID}" 
+                                                        data-status="Cancelled">Cancel</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <strong>$${reservation.totalAmount ? reservation.totalAmount.toFixed(2) : '0.00'}</strong>
+                                            ${reservation.specialRequests ? 
+                                                `<button type="button" class="btn btn-sm btn-outline-info viewRequestsBtn" 
+                                                    data-bs-toggle="tooltip" title="${reservation.specialRequests}">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </button>` : ''}
+                                        </td>
+                                    </tr>
+                                `);
+                            });
+                        }
+                    } else {
+                        showToast(response.message, 'error');
+                        $('#reservationsTableBody').html('<tr><td colspan="6" class="text-center">Error loading reservations</td></tr>');
+                    }
+                },
+                error: function(xhr) {
+                    showToast('Error loading room reservations', 'error');
+                    console.error('Error loading room reservations:', xhr);
+                    $('#reservationsTableBody').html('<tr><td colspan="6" class="text-center">Error loading reservations</td></tr>');
+                }
+            });
+        }
+        
+        // Update Reservation Status
+        function updateReservationStatus(reservationId, newStatus) {
+            $.ajax({
+                url: '/HotelManager/UpdateReservationStatus',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    reservationId: reservationId,
+                    status: newStatus
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        showToast(`Reservation status updated to ${newStatus}`, 'success');
+                        
+                        // Update status badge in the table
+                        const statusCell = $(`[data-reservation-id="${reservationId}"]`).closest('td');
+                        
+                        let statusBadge = '';
+                        switch (newStatus) {
+                            case 'Confirmed':
+                                statusBadge = '<span class="badge bg-success">Confirmed</span>';
+                                break;
+                            case 'Pending':
+                                statusBadge = '<span class="badge bg-warning">Pending</span>';
+                                break;
+                            case 'Cancelled':
+                                statusBadge = '<span class="badge bg-danger">Cancelled</span>';
+                                break;
+                            case 'Completed':
+                                statusBadge = '<span class="badge bg-info">Completed</span>';
+                                break;
+                            default:
+                                statusBadge = `<span class="badge bg-secondary">${newStatus}</span>`;
+                        }
+                        
+                        statusCell.html(statusBadge + statusCell.html().substring(statusCell.html().indexOf('<div')));
+                    } else {
+                        showToast(response.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    showToast('Error updating reservation status', 'error');
+                    console.error('Error updating reservation status:', xhr);
+                }
+            });
+        }
+        
+        // Helper function to show toast messages
+        function showToast(message, type) {
+            // Check if toastr is available
+            if (typeof toastr !== 'undefined') {
+                toastr.options = {
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: 'toast-top-right',
+                    timeOut: 3000
+                };
+                
+                switch (type) {
+                    case 'success':
+                        toastr.success(message);
+                        break;
+                    case 'error':
+                        toastr.error(message);
+                        break;
+                    case 'warning':
+                        toastr.warning(message);
+                        break;
+                    default:
+                        toastr.info(message);
+                }
+            } else {
+                // Fallback to alert if toastr is not available
+                alert(message);
+            }
+        }
+        
+        // Export table to Excel
+        function exportTable() {
+            const table = document.getElementById('hotelsTable');
+            const html = table.outerHTML;
+            const url = 'data:application/vnd.ms-excel,' + encodeURIComponent(html);
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            downloadLink.href = url;
+            downloadLink.download = 'my-hotels.xls';
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+}

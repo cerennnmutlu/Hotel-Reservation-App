@@ -81,74 +81,103 @@ namespace HotelReservationApp.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([FromBody] Reservation reservation)
+        public async Task<IActionResult> Create(Reservation reservation)
         {
-            if (ModelState.IsValid)
+            // Hata ayıklama için rezervasyon verilerini logla
+            Console.WriteLine($"Received reservation: Room={reservation.RoomID}, CheckIn={reservation.CheckInDate}, CheckOut={reservation.CheckOutDate}, Guests={reservation.GuestCount}");
+            
+            // Temel model doğrulama kontrolü
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    // Get user ID from claims
-                    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                    if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
-                    {
-                        return Json(new { success = false, message = "Kullanıcı girişi gerekli." });
-                    }
-
-                    // Validate dates
-                    if (reservation.CheckInDate >= reservation.CheckOutDate)
-                    {
-                        return Json(new { success = false, message = "Çıkış tarihi, giriş tarihinden sonra olmalıdır." });
-                    }
-
-                    if (reservation.CheckInDate < DateTime.Today)
-                    {
-                        return Json(new { success = false, message = "Giriş tarihi geçmiş bir tarih olamaz." });
-                    }
-
-                    // Check room availability
-                    var conflictingReservations = await _context.Reservations
-                        .Where(r => r.RoomID == reservation.RoomID && 
-                                   r.Status != "Cancelled" &&
-                                   ((r.CheckInDate <= reservation.CheckInDate && r.CheckOutDate > reservation.CheckInDate) ||
-                                    (r.CheckInDate < reservation.CheckOutDate && r.CheckOutDate >= reservation.CheckOutDate) ||
-                                    (r.CheckInDate >= reservation.CheckInDate && r.CheckOutDate <= reservation.CheckOutDate)))
-                        .ToListAsync();
-
-                    if (conflictingReservations.Any())
-                    {
-                        return Json(new { success = false, message = "Seçilen tarihler için oda müsait değil." });
-                    }
-
-                    reservation.UserID = userId;
-                    reservation.CreatedDate = DateTime.Now;
-                    reservation.Status = "Confirmed";
-                    
-                    // Calculate total amount
-                    reservation.TotalAmount = await CalculateTotalAmount(
-                        reservation.RoomID,
-                        reservation.CheckInDate,
-                        reservation.CheckOutDate
-                    );
-
-                    _context.Reservations.Add(reservation);
-                    await _context.SaveChangesAsync();
-
-                    return Json(new { 
-                        success = true, 
-                        message = "Rezervasyonunuz başarıyla oluşturuldu.",
-                        redirectTo = Url.Action(nameof(MyReservations)) 
-                    });
-                }
-                catch (Exception ex)
-                {
-                    return Json(new { success = false, message = "Rezervasyon oluşturulurken bir hata oluştu: " + ex.Message });
-                }
+                var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                             .Select(e => e.ErrorMessage)
+                                             .ToList();
+                Console.WriteLine($"Model validation errors: {string.Join(", ", errors)}");
+                return Json(new { success = false, errors = errors });
             }
+            
+            try
+            {
+                // Get user ID from claims
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+                {
+                    Console.WriteLine("User ID claim not found or invalid");
+                    return Json(new { success = false, message = "Kullanıcı girişi gerekli. Lütfen tekrar giriş yapın." });
+                }
+                
+                Console.WriteLine($"User ID: {userId}");
 
-            var errors = ModelState.Values.SelectMany(v => v.Errors)
-                                         .Select(e => e.ErrorMessage)
-                                         .ToList();
-            return Json(new { success = false, errors = errors });
+                // Validate dates
+                if (reservation.CheckInDate >= reservation.CheckOutDate)
+                {
+                    Console.WriteLine("Invalid dates: CheckOut must be after CheckIn");
+                    return Json(new { success = false, message = "Çıkış tarihi, giriş tarihinden sonra olmalıdır." });
+                }
+
+                if (reservation.CheckInDate < DateTime.Today)
+                {
+                    Console.WriteLine("Invalid dates: CheckIn cannot be in the past");
+                    return Json(new { success = false, message = "Giriş tarihi geçmiş bir tarih olamaz." });
+                }
+                
+                // Oda varlığını kontrol et
+                var room = await _context.Rooms.FindAsync(reservation.RoomID);
+                if (room == null)
+                {
+                    Console.WriteLine($"Room with ID {reservation.RoomID} not found");
+                    return Json(new { success = false, message = "Belirtilen oda bulunamadı." });
+                }
+
+                // Check room availability
+                var conflictingReservations = await _context.Reservations
+                    .Where(r => r.RoomID == reservation.RoomID && 
+                               r.Status != "Cancelled" &&
+                               ((r.CheckInDate <= reservation.CheckInDate && r.CheckOutDate > reservation.CheckInDate) ||
+                                (r.CheckInDate < reservation.CheckOutDate && r.CheckOutDate >= reservation.CheckOutDate) ||
+                                (r.CheckInDate >= reservation.CheckInDate && r.CheckOutDate <= reservation.CheckOutDate)))
+                    .ToListAsync();
+
+                if (conflictingReservations.Any())
+                {
+                    Console.WriteLine($"Found {conflictingReservations.Count} conflicting reservations");
+                    return Json(new { success = false, message = "Seçilen tarihler için oda müsait değil. Lütfen başka tarih seçin." });
+                }
+
+                // Rezervasyon bilgilerini ayarla
+                reservation.UserID = userId;
+                reservation.CreatedDate = DateTime.Now;
+                reservation.Status = "Confirmed";
+                
+                // Calculate total amount
+                reservation.TotalAmount = await CalculateTotalAmount(
+                    reservation.RoomID,
+                    reservation.CheckInDate,
+                    reservation.CheckOutDate
+                );
+                
+                Console.WriteLine($"Calculated total amount: {reservation.TotalAmount}");
+
+                // Veritabanına kaydet
+                _context.Reservations.Add(reservation);
+                await _context.SaveChangesAsync();
+                
+                Console.WriteLine($"Reservation created successfully with ID: {reservation.ReservationID}");
+
+                return Json(new { 
+                    success = true, 
+                    message = "Rezervasyonunuz başarıyla oluşturuldu.",
+                    redirectTo = Url.Action(nameof(MyReservations)),
+                    reservationId = reservation.ReservationID
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating reservation: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return Json(new { success = false, message = "Rezervasyon oluşturulurken bir hata oluştu: " + ex.Message });
+            }
+        }
         }
 
         // Details (Admin & Manager)

@@ -214,43 +214,9 @@
         function viewReview(reviewId) {
             // Load review details via AJAX
             fetch(`/HotelManager/GetReviewDetails/${reviewId}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('reviewDetails').innerHTML = `
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>User Information</h6>
-                                <p><strong>Name:</strong> ${data.userName}</p>
-                                <p><strong>Email:</strong> ${data.userEmail}</p>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Hotel Information</h6>
-                                <p><strong>Hotel:</strong> ${data.hotelName}</p>
-                                <p><strong>City:</strong> ${data.hotelCity}</p>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6>Rating</h6>
-                                <div class="d-flex align-items-center">
-                                    ${generateStars(data.rating)}
-                                    <span class="ms-2 badge bg-primary">${data.rating}/5</span>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Review Date</h6>
-                                <p>${new Date(data.reviewDate).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                        <hr>
-                        <div class="row">
-                            <div class="col-12">
-                                <h6>Comment</h6>
-                                <p>${data.comment || 'No comment provided'}</p>
-                            </div>
-                        </div>
-                    `;
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('reviewDetails').innerHTML = html;
                     new bootstrap.Modal(document.getElementById('viewReviewModal')).show();
                 })
                 .catch(error => {
@@ -303,4 +269,4 @@
             }
         });
     </script>
-} 
+}

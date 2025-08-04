@@ -579,5 +579,26 @@ namespace HotelReservationApp.Controllers
             }
             return Ok();
         }
+        
+        // API endpoint to get room types
+        [HttpGet]
+        public async Task<IActionResult> GetRoomTypes()
+        {
+            var roomTypes = await _context.RoomTypes.ToListAsync();
+            var formattedRoomTypes = roomTypes.Select(rt => new
+            {
+                roomTypeID = rt.RoomTypeID,
+                name = rt.TypeName
+            });
+            return Json(formattedRoomTypes);
+        }
+        
+        // API endpoint to get cities
+        [HttpGet]
+        public async Task<IActionResult> GetCities()
+        {
+            var cities = await _context.Cities.ToListAsync();
+            return Json(cities);
+        }
     }
 }
