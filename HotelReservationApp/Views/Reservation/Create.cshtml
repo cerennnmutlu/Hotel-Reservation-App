@@ -1,4 +1,4 @@
-@model HotelReservationApp.Models.Reservation
+@model HotelReservationApp.Models.ReservationViewModel
 @using Microsoft.AspNetCore.Antiforgery
 @inject IAntiforgery Antiforgery
 @{
@@ -25,9 +25,9 @@
                         <h5 class="mb-0">Reservation Details</h5>
                     </div>
                     <div class="card-body">
-                        <form action="/Reservation/Create" method="post">
+                        <form id="reservationForm" action="/Reservation/Create" method="post">
                             <input type="hidden" name="__RequestVerificationToken" value="@GetAntiForgeryToken()" />
-                            <input type="hidden" name="RoomID" value="@Model.RoomID" />
+                            <input type="hidden" name="RoomID" value="@Model.RoomID" id="RoomID" />
                             
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -166,41 +166,181 @@
             });
 
             // Form submit event listener
-            $('form').on('submit', function(e) {
+            $('#reservationForm').on('submit', function(e) {
                 e.preventDefault();
                 
-                const formData = new FormData(this);
-                const jsonData = {};
-                formData.forEach((value, key) => {
-                    jsonData[key] = value;
-                });
-
+                // Form verilerini doğrula
+                const checkInStr = $('#CheckInDate').val();
+                const checkOutStr = $('#CheckOutDate').val();
+                const checkInDate = new Date(checkInStr);
+                const checkOutDate = new Date(checkOutStr);
+                
+                console.log('CheckInDate string:', checkInStr);
+                console.log('CheckOutDate string:', checkOutStr);
+                console.log('CheckInDate object:', checkInDate);
+                console.log('CheckOutDate object:', checkOutDate);
+                
+                if (checkOutDate <= checkInDate) {
+                    toastr.error('Çıkış tarihi, giriş tarihinden sonra olmalıdır.');
+                    return false;
+                }
+                
+                if (checkInDate < new Date().setHours(0,0,0,0)) {
+                    toastr.error('Giriş tarihi geçmiş bir tarih olamaz.');
+                    return false;
+                }
+                
+                // Rezervasyon oluşturma işlemi için yükleniyor göstergesi
+                const submitBtn = $(this).find('button[type="submit"]');
+                const originalBtnText = submitBtn.html();
+                submitBtn.html('<i class="fa fa-spinner fa-spin me-2"></i>İşleniyor...');
+                submitBtn.prop('disabled', true);
+                
+                // Form verilerini manuel olarak topla
+                const formValues = {
+                    RoomID: parseInt($('#RoomID').val(), 10),
+                    CheckInDate: $('#CheckInDate').val(),
+                    CheckOutDate: $('#CheckOutDate').val(),
+                    GuestCount: parseInt($('#GuestCount').val(), 10),
+                    SpecialRequests: $('#SpecialRequests').val() || ''
+                };
+                
+                console.log('Manuel form verileri:', formValues);
+                
+                // AJAX isteği
                 $.ajax({
                     url: $(this).attr('action'),
                     method: 'POST',
-                    data: JSON.stringify(jsonData),
-                    contentType: 'application/json',
+                    data: formValues,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    beforeSend: function (xhr) {
+                        console.log('Token:', $('input[name="__RequestVerificationToken"]').val());
+                        $('#submitBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> İşleniyor...');
+                    },
                     success: function(response) {
-                        if (response.success) {
+                        console.log('Başarılı yanıt:', response);
+                        console.log('Yanıt tipi:', typeof response);
+                        
+                        // Yanıt bir string ise, JSON olarak ayrıştırmayı dene
+                        if (typeof response === 'string') {
+                            try {
+                                response = JSON.parse(response);
+                                console.log('Ayrıştırılmış yanıt:', response);
+                            } catch (e) {
+                                console.error('Yanıt ayrıştırma hatası:', e);
+                            }
+                        }
+                        
+                        if (response && response.success) {
+                            // Başarılı rezervasyon
                             toastr.success('Rezervasyon başarıyla oluşturuldu.');
+                            $('.validation-summary-errors').empty();
+                            
                             if (response.redirectTo) {
                                 setTimeout(function() {
                                     window.location.href = response.redirectTo;
                                 }, 1500);
                             }
                         } else {
-                            toastr.error(response.message || 'Rezervasyon oluşturulurken bir hata oluştu.');
+                            // Sunucu tarafında doğrulama hatası
+                            submitBtn.html(originalBtnText);
+                            submitBtn.prop('disabled', false);
+                            
+                            const errorMessage = response && response.message ? response.message : 'Rezervasyon oluşturulurken bir hata oluştu.';
+                            toastr.error(errorMessage);
+                            console.log('Sunucu yanıtı (hata):', response);
+                            
+                            // Hata mesajını görüntüle
+                            if (response && response.message) {
+                                $('.validation-summary-errors').html('<ul><li>' + response.message + '</li></ul>');
+                            } else if (response && response.errors) {
+                                const errorMessages = [];
+                                if (Array.isArray(response.errors)) {
+                                    response.errors.forEach(function(error) {
+                                        errorMessages.push('<li>' + error + '</li>');
+                                    });
+                                } else {
+                                    Object.keys(response.errors).forEach(function(key) {
+                                        const fieldErrors = response.errors[key];
+                                        if (Array.isArray(fieldErrors)) {
+                                            fieldErrors.forEach(function(error) {
+                                                errorMessages.push('<li>' + error + '</li>');
+                                            });
+                                        } else {
+                                            errorMessages.push('<li>' + fieldErrors + '</li>');
+                                        }
+                                    });
+                                }
+                                
+                                if (errorMessages.length > 0) {
+                                    $('.validation-summary-errors').html('<ul>' + errorMessages.join('') + '</ul>');
+                                }
+                            }
                         }
                     },
-                    error: function(xhr) {
-                        console.error('Rezervasyon oluşturma hatası:', xhr);
-                        if (xhr.responseJSON && xhr.responseJSON.errors) {
-                            Object.keys(xhr.responseJSON.errors).forEach(function(key) {
-                                toastr.error(xhr.responseJSON.errors[key].join('\n'));
-                            });
-                        } else {
-                            toastr.error('Rezervasyon oluşturulurken bir hata oluştu.');
+                    error: function(xhr, status, error) {
+                        // Düğmeyi eski haline getir
+                        submitBtn.html(originalBtnText);
+                        submitBtn.prop('disabled', false);
+                        
+                        console.error('Rezervasyon oluşturma hatası:', xhr.responseText);
+                        console.log('Status:', status);
+                        console.log('Error:', error);
+                        console.log('XHR Status:', xhr.status);
+                        console.log('XHR Status Text:', xhr.statusText);
+                        console.log('XHR Response Headers:', xhr.getAllResponseHeaders());
+                        
+                        // Yanıtı ayrıştırmayı dene
+                        let responseData = null;
+                        try {
+                            if (xhr.responseText) {
+                                responseData = JSON.parse(xhr.responseText);
+                                console.log('Ayrıştırılmış hata yanıtı:', responseData);
+                            }
+                        } catch (e) {
+                            console.error('Hata yanıtı ayrıştırma hatası:', e);
                         }
+                        
+                        // Hata mesajlarını işle
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            const errorMessages = [];
+                            
+                            Object.keys(xhr.responseJSON.errors).forEach(function(key) {
+                                const fieldErrors = xhr.responseJSON.errors[key];
+                                if (Array.isArray(fieldErrors)) {
+                                    fieldErrors.forEach(function(errorMsg) {
+                                        toastr.error(errorMsg);
+                                        errorMessages.push('<li>' + errorMsg + '</li>');
+                                    });
+                                    
+                                    // Alan özel hata mesajlarını göster
+                                    $('[data-valmsg-for="' + key + '"]').text(fieldErrors[0]);
+                                } else if (typeof fieldErrors === 'string') {
+                                    toastr.error(fieldErrors);
+                                    errorMessages.push('<li>' + fieldErrors + '</li>');
+                                    $('[data-valmsg-for="' + key + '"]').text(fieldErrors);
+                                }
+                            });
+                            
+                            // Özet hata mesajını göster
+                            if (errorMessages.length > 0) {
+                                $('.validation-summary-errors').html('<ul>' + errorMessages.join('') + '</ul>');
+                            }
+                        } else if (responseData && responseData.message) {
+                            // API'den gelen hata mesajı
+                            toastr.error(responseData.message);
+                            $('.validation-summary-errors').html('<ul><li>' + responseData.message + '</li></ul>');
+                        } else {
+                            // Genel hata mesajı
+                            const errorMsg = 'Rezervasyon oluşturulurken bir hata oluştu: ' + (xhr.responseText || error || xhr.statusText);
+                            toastr.error(errorMsg);
+                            $('.validation-summary-errors').html('<ul><li>' + errorMsg + '</li></ul>');
+                        }
+                        
+                        // Hata durumunu konsola yazdır
+                        console.log('Form verileri tekrar:', formValues);
                     }
                 });
             });

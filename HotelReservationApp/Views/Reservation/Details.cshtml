@@ -1,13 +1,13 @@
-@model HotelReservationApp.Models.Reservation
+@model ReservationDetailsViewModel
 @{
-    ViewData["Title"] = "Reservation Details";
+    ViewData["Title"] = "Rezervasyon Detayları";
 }
 
 <div class="container-xxl py-5">
     <div class="container">
         <div class="text-center wow fadeInUp" data-wow-delay="0.1s">
             <h6 class="section-title text-center text-primary text-uppercase">Reservation Details</h6>
-            <h1 class="mb-5">Reservation <span class="text-primary text-uppercase">#@Model.ReservationID</span></h1>
+            <h1 class="mb-5">Reservation <span class="text-primary text-uppercase">#@Model.Reservation.ReservationID</span></h1>
         </div>
 
         <div class="row g-4">
@@ -20,30 +20,30 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <h6 class="text-primary">Guest Information</h6>
-                                <p class="mb-1"><strong>Name:</strong> @Model.User?.FullName</p>
-                                <p class="mb-1"><strong>Email:</strong> @Model.User?.Email</p>
-                                <p class="mb-1"><strong>Phone:</strong> @Model.User?.Phone</p>
+                                <p class="mb-1"><strong>Name:</strong> @Model.Reservation.User?.FullName</p>
+                                <p class="mb-1"><strong>Email:</strong> @Model.Reservation.User?.Email</p>
+                                <p class="mb-1"><strong>Phone:</strong> @Model.Reservation.User?.Phone</p>
                             </div>
                             <div class="col-md-6">
                                 <h6 class="text-primary">Reservation Details</h6>
                                 <p class="mb-1"><strong>Status:</strong> 
-                                    <span class="badge @(Model.Status == "Confirmed" ? "bg-success" : 
-                                                       Model.Status == "Cancelled" ? "bg-danger" : "bg-warning")">
-                                        @Model.Status
+                                    <span class="badge @(Model.Reservation.Status == "Confirmed" ? "bg-success" : 
+                                                       Model.Reservation.Status == "Cancelled" ? "bg-danger" : "bg-warning")">
+                                        @Model.Reservation.Status
                                     </span>
                                 </p>
-                                <p class="mb-1"><strong>Check-in:</strong> @Model.CheckInDate.ToString("MMMM dd, yyyy")</p>
-                                <p class="mb-1"><strong>Check-out:</strong> @Model.CheckOutDate.ToString("MMMM dd, yyyy")</p>
-                                <p class="mb-1"><strong>Guests:</strong> @Model.GuestCount</p>
+                                <p class="mb-1"><strong>Check-in:</strong> @Model.Reservation.CheckInDate.ToString("MMMM dd, yyyy")</p>
+                                <p class="mb-1"><strong>Check-out:</strong> @Model.Reservation.CheckOutDate.ToString("MMMM dd, yyyy")</p>
+                                <p class="mb-1"><strong>Guests:</strong> @Model.Reservation.GuestCount</p>
                             </div>
                         </div>
 
-                        @if (!string.IsNullOrEmpty(Model.SpecialRequests))
+                        @if (!string.IsNullOrEmpty(Model.Reservation.SpecialRequests))
                         {
                             <hr>
                             <div>
                                 <h6 class="text-primary">Special Requests</h6>
-                                <p class="mb-0">@Model.SpecialRequests</p>
+                                <p class="mb-0">@Model.Reservation.SpecialRequests</p>
                             </div>
                         }
 
@@ -51,21 +51,21 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <h6 class="text-primary">Timeline</h6>
-                                <p class="mb-1"><strong>Created:</strong> @Model.CreatedDate.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
-                                @if (Model.UpdatedDate.HasValue)
+                                <p class="mb-1"><strong>Created:</strong> @Model.Reservation.CreatedDate.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
+                                @if (Model.Reservation.UpdatedDate.HasValue)
                                 {
-                                    <p class="mb-1"><strong>Last Updated:</strong> @Model.UpdatedDate.Value.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
+                                    <p class="mb-1"><strong>Last Updated:</strong> @Model.Reservation.UpdatedDate.Value.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
                                 }
-                                @if (Model.CancellationDate.HasValue)
+                                @if (Model.Reservation.CancellationDate.HasValue)
                                 {
-                                    <p class="mb-1"><strong>Cancelled:</strong> @Model.CancellationDate.Value.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
+                                    <p class="mb-1"><strong>Cancelled:</strong> @Model.Reservation.CancellationDate.Value.ToString("MMMM dd, yyyy 'at' HH:mm")</p>
                                 }
                             </div>
                             <div class="col-md-6">
                                 <h6 class="text-primary">Financial Information</h6>
-                                <p class="mb-1"><strong>Total Amount:</strong> <span class="text-primary fw-bold">$@Model.TotalAmount?.ToString("F2")</span></p>
-                                <p class="mb-1"><strong>Nights:</strong> @((Model.CheckOutDate - Model.CheckInDate).Days)</p>
-                                <p class="mb-1"><strong>Price per Night:</strong> $@(Model.TotalAmount / (Model.CheckOutDate - Model.CheckInDate).Days)?.ToString("F2")</p>
+                                <p class="mb-1"><strong>Total Amount:</strong> <span class="text-primary fw-bold">$@Model.Reservation.TotalAmount?.ToString("F2")</span></p>
+                                <p class="mb-1"><strong>Nights:</strong> @((Model.Reservation.CheckOutDate - Model.Reservation.CheckInDate).Days)</p>
+                                <p class="mb-1"><strong>Price per Night:</strong> $@(Model.Reservation.TotalAmount / (Model.Reservation.CheckOutDate - Model.Reservation.CheckInDate).Days)?.ToString("F2")</p>
                             </div>
                         </div>
                     </div>
@@ -79,21 +79,94 @@
                     </div>
                     <div class="card-body">
                         <div class="text-center mb-3">
-                            @if (Model.Room?.RoomImages != null && Model.Room.RoomImages.Any())
+                            @if (Model.Reservation.Room?.RoomImages != null && Model.Reservation.Room.RoomImages.Any())
                             {
-                                <img src="@Model.Room.RoomImages.First().ImageUrl" class="img-fluid rounded" alt="@Model.Room?.RoomType?.TypeName">
+                                <img src="@Model.Reservation.Room.RoomImages.First().ImageUrl" class="img-fluid rounded" alt="@Model.Reservation.Room?.RoomType?.TypeName">
                             }
                             else
                             {
-                                <img src="~/img/room-1.jpg" class="img-fluid rounded" alt="@Model.Room?.RoomType?.TypeName">
+                                <img src="~/img/room-1.jpg" class="img-fluid rounded" alt="@Model.Reservation.Room?.RoomType?.TypeName">
                             }
                         </div>
-                        <h6 class="text-primary">@Model.Room?.RoomType?.TypeName</h6>
-                        <p class="mb-2"><strong>Hotel:</strong> @Model.Room?.Hotel?.Name</p>
-                                                        <p class="mb-2"><strong>Location:</strong> @Model.Room?.Hotel?.City?.CityName</p>
-                        <p class="mb-2"><strong>Room Number:</strong> @Model.Room?.RoomNumber</p>
-                        <p class="mb-2"><strong>Capacity:</strong> @Model.Room?.Capacity Persons</p>
-                        <p class="mb-2"><strong>Price per Night:</strong> $@Model.Room?.PricePerNight</p>
+                        <h6 class="text-primary">@Model.Reservation.Room?.RoomType?.TypeName</h6>
+                        <p class="mb-2"><strong>Hotel:</strong> @Model.Reservation.Room?.Hotel?.Name</p>
+                                                        <p class="mb-2"><strong>Location:</strong> @Model.Reservation.Room?.Hotel?.City?.CityName</p>
+                        <p class="mb-2"><strong>Room Number:</strong> @Model.Reservation.Room?.RoomNumber</p>
+                        <p class="mb-2"><strong>Capacity:</strong> @Model.Reservation.Room?.Capacity Persons</p>
+                        <p class="mb-2"><strong>Price per Night:</strong> $@Model.Reservation.Room?.PricePerNight</p>
+                    </div>
+                </div>
+
+                <!-- Reviews Section -->
+                <div class="card shadow mt-3">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">Reviews</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.Reviews != null && Model.Reviews.Any())
+                        {
+                            @foreach (var review in Model.Reviews)
+                            {
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">@review.UserName</h6>
+                                            <div class="text-warning mb-2">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    @if (i <= review.Rating)
+                                                    {
+                                                        <i class="fas fa-star"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="far fa-star"></i>
+                                                    }
+                                                }
+                                            </div>
+                                            <p class="mb-0">@review.Comment</p>
+                                        </div>
+                                        <small class="text-muted">@review.ReviewDate?.ToString("MMM dd, yyyy")</small>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No reviews yet.</p>
+                        }
+
+                        <!-- Add Review Form -->
+                        @if (Model.CanAddReview && !Model.HasUserReviewed)
+                        {
+                            <hr>
+                            <h6 class="text-primary mb-3">Değerlendirmenizi Ekleyin</h6>
+                            <form id="reviewForm">
+                                <input type="hidden" id="reservationId" value="@Model.Reservation.ReservationID">
+                                <input type="hidden" id="hotelId" value="@Model.Reservation.Room.HotelID">
+                                <div class="mb-3">
+                                    <label class="form-label">Puan</label>
+                                    <div class="rating-stars">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <i class="far fa-star" data-rating="@i"></i>
+                                        }
+                                    </div>
+                                    <input type="hidden" id="rating" name="rating" value="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="comment" class="form-label">Yorum</label>
+                                    <textarea class="form-control" id="comment" name="comment" rows="3" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Değerlendirme Gönder</button>
+                            </form>
+                        }
+                        @if (Model.HasUserReviewed)
+                        {
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle"></i> Bu otel için zaten değerlendirme yaptınız.
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -103,16 +176,16 @@
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            @if (Model.Status == "Confirmed" && Model.CheckInDate > DateTime.Today)
+                            @if (Model.Reservation.Status == "Confirmed" && Model.Reservation.CheckInDate > DateTime.Today)
                             {
-                                <a asp-action="Cancel" asp-route-id="@Model.ReservationID" 
+                                <a asp-action="Cancel" asp-route-id="@Model.Reservation.ReservationID" 
                                    class="btn btn-outline-danger"
                                    onclick="return confirm('Are you sure you want to cancel this reservation?')">
                                     <i class="fa fa-times me-2"></i>Cancel Reservation
                                 </a>
                             }
-                            <a asp-action="Index" class="btn btn-outline-secondary">
-                                <i class="fa fa-arrow-left me-2"></i>Back to List
+                            <a asp-action="MyReservations" class="btn btn-outline-secondary">
+                                <i class="fa fa-arrow-left me-2"></i>Back to My Reservations
                             </a>
                         </div>
                     </div>
@@ -121,3 +194,86 @@
         </div>
     </div>
 </div>
+
+<script>
+$(document).ready(function() {
+    // Rating stars functionality
+    $('.rating-star').on('click', function() {
+        var rating = $(this).data('rating');
+        $('#rating').val(rating);
+        
+        $('.rating-star').each(function(index) {
+            if (index < rating) {
+                $(this).removeClass('fa-star-o').addClass('fa-star').css('color', '#ffc107');
+            } else {
+                $(this).removeClass('fa-star').addClass('fa-star-o').css('color', '#ddd');
+            }
+        });
+    });
+    
+    // Rating stars hover effect
+    $('.rating-star').on('mouseenter', function() {
+        var rating = $(this).data('rating');
+        
+        $('.rating-star').each(function(index) {
+            if (index < rating) {
+                $(this).css('color', '#ffc107');
+            } else {
+                $(this).css('color', '#ddd');
+            }
+        });
+    });
+    
+    $('.rating-stars').on('mouseleave', function() {
+        var selectedRating = $('#rating').val();
+        
+        $('.rating-star').each(function(index) {
+            if (index < selectedRating) {
+                $(this).removeClass('fa-star-o').addClass('fa-star').css('color', '#ffc107');
+            } else {
+                $(this).removeClass('fa-star').addClass('fa-star-o').css('color', '#ddd');
+            }
+        });
+    });
+    
+    // Review form submission
+    $('#reviewForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        var rating = $('#rating').val();
+        var comment = $('#comment').val().trim();
+        
+        if (rating == 0) {
+            alert('Please select a rating.');
+            return;
+        }
+        
+        if (comment == '') {
+            alert('Please enter a comment.');
+            return;
+        }
+        
+        $.ajax({
+                url: '@Url.Action("AddReview", "Reservation")',
+                type: 'POST',
+                data: {
+                    ReservationID: $('#reservationId').val(),
+                    HotelID: $('#hotelId').val(),
+                    Rating: rating,
+                    Comment: comment
+                },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function() {
+                alert('An error occurred while submitting your review.');
+            }
+        });
+    });
+});
+</script>

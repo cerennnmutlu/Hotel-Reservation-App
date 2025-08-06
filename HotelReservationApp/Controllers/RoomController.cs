@@ -2,9 +2,11 @@ using HotelReservationApp.Data;
 using HotelReservationApp.Models; // DbContext ve Room model için
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace HotelReservationApp.Controllers
 {
+    [Authorize(Roles = "Customer")]
     public class RoomController : Controller
     {
         private readonly HotelReservationContext _context;
